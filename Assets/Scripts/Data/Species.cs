@@ -12,13 +12,14 @@ namespace Assets.Scripts.Data
 
         [Range(0, 10)]
         public int Size;
+        public float FoodValue;
 
         [Header("Survivability")]
         public ClimateCondition Climate;
         public float ReproductionRate;
-
-        [Header("Food")]
-        public Food[] Feed;
+        public float Hunger;
+        public Group[] Feed;
+        public Species[] Enemies;
 
         [Header("Mutations")]
         public Mutation[] Mutations;
