@@ -6,13 +6,14 @@ namespace Assets.Scripts.Data
     public class Species : ScriptableObject
     {
         [Header("General information")]
-        public Texture2D Icon;
+        public Sprite Icon;
         public string Name;
         public Group Group;
 
         [Range(0, 10)]
         public int Size;
         public float FoodValue;
+        public float Agression;
 
         [Header("Survivability")]
         public ClimateCondition Climate;

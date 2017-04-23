@@ -7,5 +7,10 @@ namespace Assets.Scripts.Data
     {
         public float Temperature;
         public float Humidity;
+
+        public float TemperatureAsCelsius()
+        {
+            return (Temperature - 32f) / 1.8f;
+        }
     }
 }

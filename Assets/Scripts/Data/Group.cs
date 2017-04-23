@@ -6,7 +6,7 @@ namespace Assets.Scripts.Data
     public class Group : ScriptableObject
     {
         public string Name;
-        public Texture2D Icon;
+        public Sprite Icon;
         public Group ParentGroup;
 
         public bool IsInGroup(Group group)

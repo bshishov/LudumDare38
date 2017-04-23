@@ -2,7 +2,6 @@
 
 namespace Assets.Scripts.Data
 {
-    [Flags]
     public enum TerrainCondition
     {
         Any,
