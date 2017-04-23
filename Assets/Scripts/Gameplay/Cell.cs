@@ -17,8 +17,6 @@ namespace Assets.Scripts.Gameplay
         public readonly Dictionary<Species, SpeciesState> SpeciesStates = new Dictionary<Species, SpeciesState>();
         public TerrainType TerrainType = TerrainType.Plain;
         public TerrainAppearance.TreeAppearance LastTreeAppearance;
-        public TerrainAppearance.SurfaceAppearance LastSurfaceAppearance;
-
 
         private Text _temperatureText;
         private Text _humidityText;
@@ -89,8 +87,10 @@ namespace Assets.Scripts.Gameplay
 
         public void UpdateUI()
         {
+            
             if(_temperatureText != null)
-                _temperatureText.text = String.Format("{0:##0.#}°C", Climate.TemperatureAsCelsius());
+                _temperatureText.text = String.Format("{0:##0.#}K", Climate.Temperature);
+            //_temperatureText.text = String.Format("{0:##0.#}°C", Climate.TemperatureAsCelsius());
 
             if (_humidityText != null)
                 _humidityText.text = String.Format("{0:##0.#}%", Climate.Humidity);

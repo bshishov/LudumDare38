@@ -19,13 +19,9 @@ namespace Assets.Scripts.Gameplay
         private Color32[] _stateMap;
         private MeshFilter _meshFilter;
 
-        void Start ()
+        void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
-
-            GameManager.Instance.ShowMessage("<color=yellow>Building world. Please wait...</color>");
-            Generate();
-            GameManager.Instance.ShowMessage("<color=yellow>World building complete</color>");
         }
         
         void Update ()
@@ -39,10 +35,15 @@ namespace Assets.Scripts.Gameplay
             return MinHeight + (MaxHeight - MinHeight) * HeighCurve.Evaluate(pixel.r + Random.value * 0.01f);
         }
 
-        private void Generate()
+        public void Generate()
         {
-            if(HeightMap == null)
+            GameManager.Instance.ShowMessage("<color=yellow>Building world. Please wait...</color>");
+
+            if (HeightMap == null)
+            {
+                Debug.LogWarning("Height texture is not set");
                 return;
+            }
 
             var w = HeightMap.width;
             var h = HeightMap.height;
@@ -81,7 +82,7 @@ namespace Assets.Scripts.Gameplay
 
 
             
-            var mesh = new Mesh
+            var mesh = new Mesh 
             {
                 name = "Generated From Height",
                 vertices = verticies,
@@ -103,8 +104,8 @@ namespace Assets.Scripts.Gameplay
 
             // TILES
             _tileHeightMap = new float[Width * Height];
-            var pixelsPerTileX = HeightMap.width / Width;
-            var pixelsPerTileY = HeightMap.height / Height;
+            var pixelsPerTileX = (float)HeightMap.width / Width;
+            var pixelsPerTileY = (float)HeightMap.height / Height;
 
             for (var i = 0; i < Width; i++)
             {
@@ -116,8 +117,8 @@ namespace Assets.Scripts.Gameplay
                     {
                         for (var l = 0; l < pixelsPerTileY; l++)
                         {
-                            var u = (float)((i * pixelsPerTileX) + k) / HeightMap.width;
-                            var v = (float)((j * pixelsPerTileX) + l) / HeightMap.height;
+                            var u = (i* pixelsPerTileX + k) / HeightMap.width;
+                            var v = (j * pixelsPerTileX + l) / HeightMap.height;
                             
                             sumHeight += GetHeight(u, v);
                         }
@@ -127,6 +128,8 @@ namespace Assets.Scripts.Gameplay
                     _tileHeightMap[j*Width + i] = averageHeight;
                 }
             }
+            
+            GameManager.Instance.ShowMessage("<color=yellow>World building complete</color>");
         }
 
         public float GetHeightFromTile(int x, int y)
@@ -142,15 +145,15 @@ namespace Assets.Scripts.Gameplay
                 g = (byte) (int) (Mathf.Clamp(state.Humidity, 0, 255f))
             };
 
-            var pixelsPerTileX = HeightMap.width / Width;
-            var pixelsPerTileY = HeightMap.height / Height;
+            var pixelsPerTileX = (float)HeightMap.width / Width;
+            var pixelsPerTileY = (float)HeightMap.height / Height;
 
             for (var k = 0; k < pixelsPerTileX; k++)
             {
                 for (var l = 0; l < pixelsPerTileY; l++)
                 {
-                    var i = (x * pixelsPerTileX) + k;
-                    var j = (y * pixelsPerTileX) + l;
+                    var i = (int)(x * pixelsPerTileX) + k;
+                    var j = (int)(y * pixelsPerTileX) + l;
 
                     _stateMap[i*HeightMap.height + j] = color;
                 }
@@ -160,6 +163,11 @@ namespace Assets.Scripts.Gameplay
         public void UpdateStateMap()
         {
             _meshFilter.mesh.colors32 = _stateMap;
+        }
+
+        public void SelectCell(int x, int y)
+        {
+            GetComponent<MeshRenderer>().material.SetInt("_SelectedCell", y * Width + x);
         }
     }
 }

@@ -11,7 +11,6 @@ namespace Assets.Scripts.Gameplay
         public const int Width = 20;
         public const int Height = 20;
         public const int CellsCount = Width * Height;
-        public const float TileOffset = 0f;
         public const float SeasonSteps = 1000f;
         public const float UpdateInterval = 0.3f;
         public const int CellsPerUpdate = 40;
@@ -91,21 +90,26 @@ namespace Assets.Scripts.Gameplay
             Debug.LogFormat("Clicked on cell {0}", cell.gameObject.name); 
             cell.OnClick();
             _selected = cell;
+            _terrain.SelectCell(cell.X, cell.Y);
         }
 
         void BuildWorld()
         {
+            _terrain.Generate();
+
             for (var i = 0; i < Width; i++)
             {
                 for (var j = 0; j < Height; j++)
                 {
-                    var obj = (GameObject) Instantiate(CellPrefab, new Vector3(i - Width / 2 + i * TileOffset, 0, j - Width / 2 + j * TileOffset), Quaternion.identity, transform);
+                    var height = _terrain.GetHeightFromTile(i, j);
+
+                    var obj = (GameObject) Instantiate(CellPrefab, new Vector3(i - Width * 0.5f + 0.5f, height - 0.7f, j - Width * 0.5f + 0.5f), Quaternion.identity, transform);
                     obj.name = string.Format("Cell-{0}-{1}", i, j);
 
                     var cell = obj.GetComponent<Cell>();
                     cell.X = i;
                     cell.Y = j;
-                    var height = _terrain.GetHeightFromTile(i, j);
+
                     if (height < 0f)
                     {
                         cell.TerrainType = TerrainType.Water;
@@ -116,8 +120,7 @@ namespace Assets.Scripts.Gameplay
                     }
                     else if (height < 0.7f)
                     {
-                        //cell.TerrainType = TerrainType.Hills;
-                        cell.TerrainType = TerrainType.Plain;
+                        cell.TerrainType = TerrainType.Hills;
                     }
                     else
                     {
@@ -135,7 +138,7 @@ namespace Assets.Scripts.Gameplay
             if(Appearance == null)
                 return;
             
-            //Appearance.Construct(cell);
+            Appearance.Construct(cell);
 
             if (TreesGroup != null)
             {
@@ -149,7 +152,7 @@ namespace Assets.Scripts.Gameplay
         {
             var distFromNorth = 1f - cell.Y/(float) Height;
             var baseTemp = MeanNorthTemp + distFromNorth * (MeanSouthTemp - MeanNorthTemp);
-            var seasonAmp = 30f + 5f * Random.value;
+            var seasonAmp = 25f + 5f * Random.value;
             var coeefYear = _step/SeasonSteps;
             var seasonTemp = baseTemp + Mathf.Sin(Mathf.PI * coeefYear) * seasonAmp;
 

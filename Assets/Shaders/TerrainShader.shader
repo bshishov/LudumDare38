@@ -1,6 +1,6 @@
 ﻿Shader "Custom/TerrainShader" {
 	Properties {
-		_Color ("Color", Color) = (1,1,1,1)
+		_GridColor ("Grid Color", Color) = (1,1,1,1)
 		_MainTex ("Albedo (RGB)", 2D) = "white" {}
 		_Ramp("Lightning Ramp", 2D) = "white" {}
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
@@ -12,6 +12,8 @@
 		_Grass("Grass", 2D) = "white" {}
 
 		_Grid("Grid", 2D) = "white" {}
+		_SelectedCell("Metallic", int) = 0 
+
 	}
 	SubShader {
 		Tags { "RenderType"="Opaque" }
@@ -52,50 +54,47 @@
 
 		half _Glossiness;
 		half _Metallic;
-		fixed4 _Color;		
+		fixed4 _GridColor;
+		int _SelectedCell;
+
+		//#define RESCALE(X,A,B) (abs((X) - (A)) / abs((B) - (A)))
+		#define RESCALE(X,A,B) (distance(X, A) / distance(B, A))
+		#define CLAMP_RANGE(X,A,B) clamp(sign((X) - (A)) * sign((B) - (X)), 0, 1)
+		//#define IN_RANGE(X,A,B) (1.0 - (clamp(RESCALE(X,A,B), 0.0, 1.0) - 0.5) * 2.0)		
+		#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B) * (1 - abs(RESCALE(X, A, B) - 0.5) * 2.0)
+		//#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B)
 
 		void surf(Input IN, inout SurfaceOutputStandard  o)
 		{
-			fixed4 c = tex2D(_MainTex, IN.uv_MainTex) * _Color;
-			//o.Albedo = c.rgb;			
-
-			half height = clamp((IN.worldPos.y - 0.5) * 0.7, 0, 1);
-			half temperature = 255.0 * IN.vColor.r - 100 + _SinTime.z * 5;
+			fixed dissolve = tex2D(_MainTex, IN.uv_MainTex).r;
+			half height = IN.worldPos.y;
+			half temperature = 255.0 * IN.vColor.r - 100.0;// +_SinTime.z * 5;
+			half humidity = 255.0 * IN.vColor.g;// +_SinTime.z * 5;
 			
-			half dissolve = clamp((temperature  + 20.0) / 60.0, 0, 1) + c.r * 0.2;
-			dissolve = pow(dissolve, 5);
-			half4 col1 = tex2D(_Snow, IN.uv_MainTex);
-			half4 col2 = tex2D(_Grass, IN.uv_MainTex);
-			o.Albedo = lerp(col1, col2, dissolve).rgb;
+			// BASE TERRAIN
+			half snow = IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0);  
+			//half snow = IN_RANGE(temperature, -40.0, 30.0);
+			half dirt = IN_RANGE(temperature, 10, 120.0);
+			half sand = IN_RANGE(temperature, 80.0, 160.0) + IN_RANGE(height, -0.5, 0.2);
 
-			/*
-			if (height < 0.2)
-			{
-				dissolve = (height - 0) / (0.3 - 0);
-				col1 = tex2D(_Sand, IN.uv_MainTex);
-				col2 = tex2D(_Grass, IN.uv_MainTex);
-			}
-			else if (height > 0.3 && height < 0.6)
-			{
-				dissolve = (height - 0.3) / (0.6 - 0.3);
-				col1 = tex2D(_Grass, IN.uv_MainTex);
-				col2 = tex2D(_Dirt, IN.uv_MainTex);
-				
-			}
-			else if (height > 0.6)
-			{
-				dissolve = (height - 0.6) / (1 - 0.6);
-				col1 = tex2D(_Dirt, IN.uv_MainTex);
-				col2 = tex2D(_Snow, IN.uv_MainTex);				
-			}*/
+			half itotal = 1 / (snow + dirt + sand);
+
+			//o.Albedo = IN.vColor;
+			o.Albedo += itotal * snow * tex2D(_Snow, IN.uv_MainTex).rgb;
+			o.Albedo += itotal * dirt * tex2D(_Dirt, IN.uv_MainTex).rgb;
+			o.Albedo += itotal * sand * tex2D(_Sand, IN.uv_MainTex).rgb;
 			
-			o.Albedo = lerp(col1, col2, dissolve * dissolve).rgb;
-		
-			float f = frac(IN.worldPos.x);			
-			float distToX = max(1 - f, f);
-			//o.Albedo *= fmod(IN.worldPos.x, 1);
-			//o.Albedo *= fmod(IN.worldPos.z, 1);
-			o.Albedo *= 1 - tex2D(_Grid, IN.uv_Grid).r * (1 - _Color);
+
+			uint i = _SelectedCell % 20;
+			uint j = _SelectedCell / 20;
+			float isSelected = CLAMP_RANGE(IN.worldPos.x + 10.0, i, i + 1) * CLAMP_RANGE(IN.worldPos.z + 10.0, j, j + 1);
+			//o.Albedo *= 1 + isSelected * 2;
+
+
+			// Grid			
+			fixed grid = tex2D(_Grid, IN.uv_Grid).r;
+			o.Albedo = (1 - grid) * o.Albedo + grid * _GridColor + isSelected * grid;
+			o.Emission = grid * _GridColor;
 			
 			
 			// Metallic and smoothness come from slider variables
