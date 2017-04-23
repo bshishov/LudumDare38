@@ -1,8 +1,10 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Gameplay
 {
@@ -21,10 +23,9 @@ namespace Assets.Scripts.Gameplay
 
         public Cell[,] Cells = new Cell[Width,Height];
         public GameObject CellPrefab;
-        public Group TreesGroup;
-        public Group GrassGroup;
         public TerrainAppearance Appearance;
         public GameObject MessagePrefab;
+        public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker();
 
         private Cell _selected;
         private float _step;
@@ -37,8 +38,16 @@ namespace Assets.Scripts.Gameplay
         {
             _terrain = GetComponent<TerrainGenerator>();
             BuildWorld();
+
+            if (Tracker != null)
+            {
+                Tracker.NewSpecies += TrackerOnNewSpecies;
+                Tracker.Extincted += TrackerOnExtincted;
+            }
         }
+
         
+
         void Update ()
         {
             if (Input.GetMouseButtonDown(0))
@@ -66,7 +75,7 @@ namespace Assets.Scripts.Gameplay
                     var y = i / Width;
                     var cell = Cells[x, y];
                     ClimateProcessing(cell);
-                    SpeciesProcessing(cell);
+                    cell.Step();
                     UpdateAppearence(cell);
                 }
 
@@ -110,24 +119,7 @@ namespace Assets.Scripts.Gameplay
                     cell.X = i;
                     cell.Y = j;
 
-                    if (height < 0f)
-                    {
-                        cell.TerrainType = TerrainType.Water;
-                    }
-                    else if(height < 0.4f)
-                    {
-                        cell.TerrainType = TerrainType.Plain;
-                    }
-                    else if (height < 0.7f)
-                    {
-                        cell.TerrainType = TerrainType.Hills;
-                    }
-                    else
-                    {
-                        cell.TerrainType = TerrainType.Mountains;
-                    }
-
-                    cell.InitialTest();
+                    cell.InitialSetup(height);
                     Cells[i,j] = cell;
                 }
             }
@@ -137,15 +129,8 @@ namespace Assets.Scripts.Gameplay
         {
             if(Appearance == null)
                 return;
-            
-            Appearance.Construct(cell);
 
-            if (TreesGroup != null)
-            {
-                var treesSpecies = cell.GetFromGroup(TreesGroup);
-                var totalTrees = treesSpecies.Sum(sp => sp.Count);
-            }
-            
+            cell.UpdateAppearance(Appearance);
         }
 
         void ClimateProcessing(Cell cell)
@@ -159,24 +144,13 @@ namespace Assets.Scripts.Gameplay
             cell.Climate.Temperature = seasonTemp;
             _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
         }
-
-        void SpeciesProcessing(Cell cell)
-        {
-            foreach (var speciesState in cell.SpeciesStates.Values.ToList())
-            {
-                speciesState.Process(cell);
-                if (speciesState.Count < 1f)
-                {
-                    cell.SpeciesStates.Remove(speciesState.Species);
-                }
-            }
-        }
+       
 
         void AfterStep()
         {
-            // TODO: DETECT NEW AND EXTINCTED SPECIES
+            Tracker.Step();
             _terrain.UpdateStateMap();
-            ShowMessage(string.Format("Step {0}", _step));
+            //ShowMessage(string.Format("Step {0}", _step));
         }
 
         public void ShowMessage(string text)
@@ -190,6 +164,16 @@ namespace Assets.Scripts.Gameplay
             var messageObj = (GameObject)GameObject.Instantiate(MessagePrefab, _messagesPanel.transform, false);
             var textCmp = messageObj.GetComponent<Text>();
             textCmp.text = text;
+        }
+
+        private void TrackerOnNewSpecies(Species species)
+        {
+            ShowMessage(string.Format("New species evolved <color=yellow>{0}</color>", species.Name));
+        }
+
+        private void TrackerOnExtincted(Species species)
+        {
+            ShowMessage(string.Format("Species <color=red>{0}</color> extincted", species.Name));
         }
     }
 }

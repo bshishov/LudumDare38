@@ -10,6 +10,7 @@
 		_Sand("Sand", 2D) = "white" {}
 		_Snow("Snow", 2D) = "white" {}
 		_Grass("Grass", 2D) = "white" {}
+		_Swamp("Swamp", 2D) = "white" {}
 
 		_Grid("Grid", 2D) = "white" {}
 		_SelectedCell("Metallic", int) = 0 
@@ -32,6 +33,7 @@
 		sampler2D _Sand;
 		sampler2D _Snow;
 		sampler2D _Grass;
+		sampler2D _Swamp;
 		sampler2D _Ramp;		
 		sampler2D _Grid;
 
@@ -72,15 +74,19 @@
 			half humidity = 255.0 * IN.vColor.g;// +_SinTime.z * 5;
 			
 			// BASE TERRAIN
-			half snow = IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0);  
-			//half snow = IN_RANGE(temperature, -40.0, 30.0);
-			half dirt = IN_RANGE(temperature, 10, 120.0);
-			half sand = IN_RANGE(temperature, 80.0, 160.0) + IN_RANGE(height, -0.5, 0.2);
+			half snow = clamp(IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0), 0, 1);  			
+			half dirt = IN_RANGE(temperature, 10, 40.0);			
+			half swamp = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, 50.0, 110.0);
+			half grass = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, -10.0, 110.0);
+			half sand = clamp(IN_RANGE(temperature, 50.0, 160.0) + IN_RANGE(height, -0.5, 0.2), 0, 1);
+			
 
-			half itotal = 1 / (snow + dirt + sand);
+			half itotal = 1.0 / (snow + dirt + sand + grass + swamp + 0.01);
 
 			//o.Albedo = IN.vColor;
 			o.Albedo += itotal * snow * tex2D(_Snow, IN.uv_MainTex).rgb;
+			o.Albedo += itotal * grass * tex2D(_Grass, IN.uv_MainTex).rgb;
+			o.Albedo += itotal * swamp * tex2D(_Swamp, IN.uv_MainTex).rgb;
 			o.Albedo += itotal * dirt * tex2D(_Dirt, IN.uv_MainTex).rgb;
 			o.Albedo += itotal * sand * tex2D(_Sand, IN.uv_MainTex).rgb;
 			

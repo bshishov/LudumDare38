@@ -34,7 +34,8 @@ namespace Assets.Scripts.Data
                 return 0f;
 
             var tempMod = (state.Temperature - MinClimate.Temperature)/(MaxClimate.Temperature - MinClimate.Temperature);
-            return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f));
+            var humidityMod = (state.Humidity - MinClimate.Humidity) / (MaxClimate.Humidity - MinClimate.Humidity);
+            return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f)) * Mathf.Clamp01(1f - Mathf.Abs(humidityMod - 0.5f));
         }
 
         public bool Match(Cell cell)
@@ -56,6 +57,10 @@ namespace Assets.Scripts.Data
             if (cell.Climate.Temperature < MinClimate.Temperature)
                 return false;
             if (cell.Climate.Temperature > MaxClimate.Temperature)
+                return false;
+            if (cell.Climate.Humidity < MinClimate.Humidity)
+                return false;
+            if (cell.Climate.Humidity > MaxClimate.Humidity)
                 return false;
 
             return true;
