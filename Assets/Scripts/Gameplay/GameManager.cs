@@ -16,7 +16,6 @@ namespace Assets.Scripts.Gameplay
         public const float SeasonSteps = 1000f;
         public const float UpdateInterval = 0.3f;
         public const int CellsPerUpdate = 40;
-        
 
         public const float MeanNorthTemp = 0f; // Fahrenheit
         public const float MeanSouthTemp = 80f; // Fahrenheit
@@ -24,7 +23,14 @@ namespace Assets.Scripts.Gameplay
         public Cell[,] Cells = new Cell[Width,Height];
         public GameObject CellPrefab;
         public TerrainAppearance Appearance;
+        public TerrainTypesCollection Terrains;
+
+        [Header("Visuals")]
         public GameObject MessagePrefab;
+        public GameObject PointerPlus;
+        public GameObject PointerCross;
+
+
         public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker();
 
         private Cell _selected;
@@ -33,6 +39,7 @@ namespace Assets.Scripts.Gameplay
         private int _lastIndex = 0;
         private GameObject _messagesPanel;
         private TerrainGenerator _terrain;
+        private Cell _lastEventCell;
 
         void Start ()
         {
@@ -45,8 +52,6 @@ namespace Assets.Scripts.Gameplay
                 Tracker.Extincted += TrackerOnExtincted;
             }
         }
-
-        
 
         void Update ()
         {
@@ -96,8 +101,12 @@ namespace Assets.Scripts.Gameplay
 
         void OnCellClick(Cell cell)
         {
-            Debug.LogFormat("Clicked on cell {0}", cell.gameObject.name); 
-            cell.OnClick();
+            Debug.LogFormat("Clicked on cell {0}", cell.gameObject.name);
+
+            if (_selected != null)
+                _selected.OnUnSelect();
+
+            cell.OnSelect();
             _selected = cell;
             _terrain.SelectCell(cell.X, cell.Y);
         }
@@ -127,10 +136,10 @@ namespace Assets.Scripts.Gameplay
 
         void UpdateAppearence(Cell cell)
         {
-            if(Appearance == null)
-                return;
-
-            cell.UpdateAppearance(Appearance);
+            if (Appearance != null)
+            {
+                cell.UpdateAppearance(Appearance);
+            }
         }
 
         void ClimateProcessing(Cell cell)
@@ -168,12 +177,52 @@ namespace Assets.Scripts.Gameplay
 
         private void TrackerOnNewSpecies(Species species)
         {
+            if (_lastEventCell != null)
+                ShowSpeciesPointer(PointerPlus, species, _lastEventCell.transform);
             ShowMessage(string.Format("New species evolved <color=yellow>{0}</color>", species.Name));
         }
 
         private void TrackerOnExtincted(Species species)
         {
+            if(_lastEventCell != null)
+                ShowSpeciesPointer(PointerCross, species, _lastEventCell.transform);
             ShowMessage(string.Format("Species <color=red>{0}</color> extincted", species.Name));
+        }
+
+        public void ShowSpeciesPointer(GameObject pointerPrefab, Species species, Transform target)
+        {
+            if(pointerPrefab == null)
+                return;
+
+            var canvas = GameObject.Find("Canvas");
+            if(canvas == null)
+                return;
+
+            var obj = (GameObject) Instantiate(pointerPrefab, canvas.transform, false);
+            var iconObj = obj.transform.Find("Icon");
+            if (iconObj != null)
+            {
+                var iconImage = iconObj.GetComponent<Image>();
+                if (iconImage)
+                {
+                    iconImage.sprite = species.Icon;
+                }
+            }
+
+            var scr = obj.GetComponent<UIPointingEvent>();
+            scr.Target = target;
+        }
+
+        public void NewSpeciesOnCell(Species species, Cell cell)
+        {
+            _lastEventCell = cell;
+            Tracker.SpeciesBorn(species);
+        }
+
+        public void ExtinctedSpeciesOnCell(Species species, Cell cell)
+        {
+            _lastEventCell = cell;
+            Tracker.SpeciesDied(species);
         }
     }
 }

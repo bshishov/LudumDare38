@@ -9,9 +9,10 @@ namespace Assets.Scripts.Data
         public string ContainerName = "GenericAppearence";
         public ClimateCondition Condition;
         public Group RequiredGroup;
+        public uint MinCountInGroup = 0;
         public GameObject Prefab;
-        public int CountMin = 1;
-        public int CountMax = 1;
+        public uint CountMin = 1;
+        public uint CountMax = 1;
         public float Scale = 1f;
         public float ScaleSpread = 0.2f;
         public float Rotation = 0f;

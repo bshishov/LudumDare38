@@ -13,11 +13,13 @@ namespace Assets.Scripts.Gameplay
         private bool _isPanning;
         private Vector3 _lastMousePos;
         private Vector3 _panTarget;
+        private Quaternion _panRotation;
         private float _zoom = 0f;
         
         void Start ()
         {
             _panTarget = transform.position;
+            _panRotation = transform.rotation;
         }
 	
         // Update is called once per frame
@@ -50,7 +52,9 @@ namespace Assets.Scripts.Gameplay
                 _zoom = Mathf.Clamp(_zoom, MinZoom, MaxZoom);
             }
 
-            transform.position = Vector3.Lerp(transform.position, _panTarget + transform.forward * _zoom, Time.deltaTime * 10);
+            var dt = Time.deltaTime*10;
+            transform.position = Vector3.Lerp(transform.position, _panTarget + new Vector3(0, -1f, 0.2f).normalized * _zoom, dt);
+            transform.rotation = Quaternion.Lerp(transform.rotation, _panRotation * Quaternion.AngleAxis(-_zoom * 1f, Vector3.right), dt);
         }
     }
 }

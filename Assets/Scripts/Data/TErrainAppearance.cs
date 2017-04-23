@@ -12,7 +12,25 @@ namespace Assets.Scripts.Data
 
         public List<PropsAppearance> GetAppearancesFor(Cell cell)
         {
-            return Appearances.Where(surface => surface.Condition.Match(cell)).ToList();
+            var appearances = new List<PropsAppearance>();
+
+            foreach (var appearance in Appearances)
+            {
+                if (appearance.Condition.Match(cell))
+                {
+                    if (appearance.RequiredGroup != null)
+                    {
+                        if(cell.HasGroup(appearance.RequiredGroup))
+                            appearances.Add(appearance);
+                    }
+                    else
+                    {
+                        appearances.Add(appearance);
+                    }
+                }
+            }
+
+            return appearances;
         }
     }
 }

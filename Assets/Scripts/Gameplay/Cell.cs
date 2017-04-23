@@ -18,6 +18,8 @@ namespace Assets.Scripts.Gameplay
         public readonly Dictionary<Species, SpeciesState> SpeciesStates = new Dictionary<Species, SpeciesState>();
         public TerrainType TerrainType = TerrainType.Plain;
         public List<PropsAppearance> ActiveAppearances = new List<PropsAppearance>();
+
+        [Header("Effects")]
         public GameObject NewSpeciesEffectPrefab;
         public GameObject ExctinctedEffectPrefab;
         public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker();
@@ -26,6 +28,8 @@ namespace Assets.Scripts.Gameplay
         private Text _humidityText;
 
         private Shaker _shaker;
+        private bool _isSelected;
+        private TerrainInfo _terrain;
 
 
         void Start ()
@@ -45,31 +49,14 @@ namespace Assets.Scripts.Gameplay
 
         public void InitialSetup(float height)
         {
-            if (height < 0f)
-            {
-                TerrainType = TerrainType.Water;
-            }
-            else if (height < 0.4f)
-            {
-                TerrainType = TerrainType.Plain;
-            }
-            else if (height < 0.7f)
-            {
-                TerrainType = TerrainType.Hills;
-            }
-            else
-            {
-                TerrainType = TerrainType.Mountains;
-            }
+            _terrain = GameManager.Instance.Terrains.GetForHeight(height);
+            TerrainType = _terrain.TerrainType;
 
             Climate.Temperature = 0.0f;
             var distFromNorth = 1f - (float)Y / GameManager.Height;
             
             Climate.Humidity = (1f - Mathf.Abs(distFromNorth - 0.5f) * 2f) * 80f - (height - 1f) * 25f;
             Climate.Humidity = Mathf.Clamp(Climate.Humidity, 0, 100f);
-
-
-
 
             if (X == 0 && Y == 0)
             {
@@ -80,6 +67,25 @@ namespace Assets.Scripts.Gameplay
 
         void BuildUI()
         {
+            if (_terrain != null)
+            {
+                var terrainIconObj = GameObject.Find("Canvas/Sidebar/TerrainIcon");
+                if (terrainIconObj != null)
+                {
+                    var img = terrainIconObj.GetComponent<Image>();
+                    if (img != null && _terrain.Icon != null)
+                        img.sprite = _terrain.Icon;
+                }
+
+                var terrainNameObj = GameObject.Find("Canvas/Sidebar/TerrainName");
+                if (terrainNameObj != null)
+                {
+                    var txt = terrainNameObj.GetComponent<Text>();
+                    if (txt != null)
+                        txt.text = _terrain.Name;
+                }
+            }
+
             var temperature = GameObject.Find("Canvas/Sidebar/Info/Temperature");
             if (temperature != null)
                 _temperatureText = temperature.GetComponent<Text>();
@@ -116,10 +122,16 @@ namespace Assets.Scripts.Gameplay
             Tracker.Step();
         }
 
-        public void OnClick()
+        public void OnSelect()
         {
             BuildUI();
             Shake();
+            _isSelected = true;
+        }
+
+        public void OnUnSelect()
+        {
+            _isSelected = false;
         }
 
         public void Shake()
@@ -130,9 +142,8 @@ namespace Assets.Scripts.Gameplay
 
         public void UpdateUI()
         {
-            
             if(_temperatureText != null)
-                _temperatureText.text = String.Format("{0:##0.#}K", Climate.Temperature);
+                _temperatureText.text = String.Format("{0:##0.#}°F", Climate.Temperature);
             //_temperatureText.text = String.Format("{0:##0.#}°C", Climate.TemperatureAsCelsius());
 
             if (_humidityText != null)
@@ -182,19 +193,28 @@ namespace Assets.Scripts.Gameplay
             return states;
         }
 
+        public bool HasGroup(Group speciesGroup)
+        {
+            return SpeciesStates.Any(kvp => kvp.Key.IsInGroup(speciesGroup));
+        }
+
         private void TrackerOnNewSpecies(Species species)
         {
-            //BuildUI();
+            if(_isSelected)
+                BuildUI();
             
             Shake();
             SpawnEffect(NewSpeciesEffectPrefab, 2f);
-            GameManager.Instance.Tracker.SpeciesBorn(species);
+            GameManager.Instance.NewSpeciesOnCell(species, this);
         }
 
         private void TrackerOnExtincted(Species species)
         {
+            if (_isSelected)
+                BuildUI();
+
             SpawnEffect(ExctinctedEffectPrefab, 2f);
-            GameManager.Instance.Tracker.SpeciesDied(species);
+            GameManager.Instance.ExtinctedSpeciesOnCell(species, this);
         }
 
         private void SpawnEffect(GameObject prefab, float duration)

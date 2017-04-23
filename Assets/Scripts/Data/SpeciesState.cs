@@ -97,6 +97,23 @@ namespace Assets.Scripts.Data
             if(Count < 1f)
                 return;
 
+
+            // BATTLE FOR EATING
+            // 0.5 because only "males" will participate. Or its just because same battle calculates twice
+            var power = Count*0.5f*Species.Agression;
+            foreach (var enemySpecies in Species.Enemies)
+            {
+                if (!cell.SpeciesStates.ContainsKey(enemySpecies))
+                {
+                    var enemy = cell.SpeciesStates[enemySpecies];
+                    var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
+                    var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)) * 0.721348f);
+                    Count -= Count * 0.5f * (1f - winRate);
+                    enemy.Count -= enemy.Count*0.5f*winRate;
+                }
+            }
+
+
             // HUNGER AND EATING
             var starving = 0f;
             var willMigrate = Count * 0.2f;
