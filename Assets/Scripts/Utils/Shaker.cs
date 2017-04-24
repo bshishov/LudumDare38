@@ -18,7 +18,7 @@ namespace Assets.Scripts.Utils
             _position = transform.position;
         }
         
-        void Update ()
+        void Update()
         {
             if (_isShaking)
             {
