@@ -118,6 +118,9 @@ namespace Assets.Scripts.Gameplay
                 {
                     SpeciesStates.Remove(speciesState.Species);
                     Tracker.SpeciesDied(speciesState.Species);
+
+                    if(_isSelected)
+                        BuildUI();
                 }
             }
             
@@ -229,17 +232,18 @@ namespace Assets.Scripts.Gameplay
             Destroy(go, duration);
         }
 
-        public void UpdateAppearance(TerrainAppearance terrainAppearance)
+        public void UpdateAppearance(List<PropsAppearance> validAppearances)
         {
-            var validAppearances = terrainAppearance.GetAppearancesFor(this);
-
-            foreach (var currentAppearance in ActiveAppearances)
+            for (var index = 0; index < ActiveAppearances.Count; index++)
             {
+                var currentAppearance = ActiveAppearances[index];
                 if (!validAppearances.Contains(currentAppearance))
                 {
-                    var container = transform.FindChild(currentAppearance.ContainerName);
+                    var container = transform.FindChild(currentAppearance.name);
                     if (container != null)
                         Destroy(container.gameObject);
+
+                    ActiveAppearances.Remove(currentAppearance);
                 }
             }
 
@@ -249,10 +253,10 @@ namespace Assets.Scripts.Gameplay
                 if (ActiveAppearances.Contains(appearance))
                     continue;
 
-                var container = transform.FindChild(appearance.ContainerName);
+                var container = transform.FindChild(appearance.name);
                 if (container == null)
                 {
-                    container = new GameObject(appearance.ContainerName).transform;
+                    container = new GameObject(appearance.name).transform;
                     container.SetParent(transform, false);
                     container.position += new Vector3(0, 0.5f, 0);
                 }
@@ -267,7 +271,9 @@ namespace Assets.Scripts.Gameplay
 
             for (var i = 0; i < count; i++)
             {
-                var pos = appearance.BasePosition + new Vector3(appearance.PositionSpread * UnityEngine.Random.value - 0.5f, 0, appearance.PositionSpread * UnityEngine.Random.value - 0.5f);
+                var rndPos = new Vector3(appearance.PositionSpread*UnityEngine.Random.value - 0.5f, 0,
+                    appearance.PositionSpread*UnityEngine.Random.value - 0.5f);
+                var pos = appearance.BasePosition + rndPos;
                 var actualObject = (GameObject)Instantiate(appearance.Prefab, container, false);
                 actualObject.transform.localPosition = pos;
                 actualObject.transform.localScale *= appearance.Scale + UnityEngine.Random.value * appearance.ScaleSpread;
@@ -288,6 +294,18 @@ namespace Assets.Scripts.Gameplay
 
             var buffState = new BuffState(buff, this);
             _currentBuffs.Add(buffState);
+        }
+
+        public Vector3 GetPlacementCorrecrion()
+        {
+            if (TerrainType == TerrainType.Water)
+            {
+                // Return dist to sea level
+                return new Vector3(0, -transform.position.y, 0);
+            }
+
+            // TODO: estimate normal or raycast the terrain
+            return Vector3.zero;
         }
     }
 }

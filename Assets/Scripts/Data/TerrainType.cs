@@ -5,6 +5,6 @@
         Water,
         Plain,
         Hills,
-        Mountains
+        Mountains,
     }
 }

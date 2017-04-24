@@ -40,8 +40,7 @@ namespace Assets.Scripts.Utils
         void Update()
         {
             var rect = GetComponent<RectTransform>();
-            var pos = new Vector3(Target.position.x, 0, Target.position.z);
-            var viewportPosition = Camera.main.WorldToViewportPoint(pos);
+            var viewportPosition = Camera.main.WorldToViewportPoint(Target.position + new Vector3(0, 0.5f, 0));
             rect.anchorMin = viewportPosition;
             rect.anchorMax = viewportPosition;
         }

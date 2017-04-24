@@ -18,5 +18,16 @@ namespace Assets.Scripts.Data
         public float HumidityChange;
         public float ExctinctionRate;
         public float WaterLevelChangeRate;
+
+        [Serializable]
+        public struct Passanger
+        {
+            public Species Species;
+            public float Count;
+        }
+
+        [Header("Life")]
+        public Passanger[] Passangers;
+
     }
 }

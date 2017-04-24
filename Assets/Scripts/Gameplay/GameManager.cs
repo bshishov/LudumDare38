@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Utils;
@@ -18,13 +19,14 @@ namespace Assets.Scripts.Gameplay
         public const int CellsPerUpdate = 40;
 
         public const float MeanNorthTemp = 0f; // Fahrenheit
-        public const float MeanSouthTemp = 80f; // Fahrenheit
+        public const float MeanSouthTemp = 100f; // Fahrenheit
 
         public Cell[,] Cells = new Cell[Width,Height];
         public GameObject CellPrefab;
-        public TerrainAppearance Appearance;
         public TerrainTypesCollection Terrains;
-        public Buff TestBuff;
+
+        [Range(0f, 10f)]
+        public float TimeScale = 1f;
 
         [Header("Visuals")]
         public GameObject MessagePrefab;
@@ -32,7 +34,7 @@ namespace Assets.Scripts.Gameplay
         public GameObject PointerCross;
 
 
-        public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker();
+        public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker { StepToForget = 20f };
 
         private Cell _selected;
         private float _step;
@@ -41,31 +43,42 @@ namespace Assets.Scripts.Gameplay
         private GameObject _messagesPanel;
         private TerrainGenerator _terrain;
         private Cell _lastEventCell;
+        private PropsAppearance[] _appearances;
+        private Caster _caster;
 
         void Start ()
         {
             _terrain = GetComponent<TerrainGenerator>();
             BuildWorld();
 
+            ShowMessage("Loading resources");
+            _appearances = Resources.LoadAll<PropsAppearance>("Appearance");
+            Debug.LogFormat("Loaded {0} appearances", _appearances.Length);
+
             if (Tracker != null)
             {
                 Tracker.NewSpecies += TrackerOnNewSpecies;
                 Tracker.Extincted += TrackerOnExtincted;
             }
+
+            _caster = GetComponent<Caster>();
         }
 
         void Update ()
         {
             if (Input.GetMouseButtonDown(0) && !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(-1))
             {
-                RaycastHit hit;
-                var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-                if (Physics.Raycast(ray, out hit))
+                if (!_caster.SelectionIsActive)
                 {
-                    var cell = hit.collider.gameObject.GetComponent<Cell>();
-                    if (cell != null)
-                        OnCellClick(cell);
+                    RaycastHit hit;
+                    var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+                    if (Physics.Raycast(ray, out hit))
+                    {
+                        var cell = hit.collider.gameObject.GetComponent<Cell>();
+                        if (cell != null)
+                            OnCellClick(cell);
+                    }
                 }
             }
             
@@ -89,8 +102,8 @@ namespace Assets.Scripts.Gameplay
 
                 if (_lastIndex >= CellsCount - 1)
                 {
-                    AfterStep();
-                    _step += 1f;
+                    AfterAllCells();
+                    _step += 1f * TimeScale;
                     _updateTime = 0f;
                     _lastIndex = 0;
                 }
@@ -102,7 +115,7 @@ namespace Assets.Scripts.Gameplay
 
         void OnCellClick(Cell cell)
         {
-            Debug.LogFormat("Clicked on cell {0}", cell.gameObject.name);
+            Debug.LogFormat("Clicked on cell {0}. Height = {1}", cell.gameObject.name, cell.Height);
 
             if (_selected != null)
                 _selected.OnUnSelect();
@@ -122,7 +135,7 @@ namespace Assets.Scripts.Gameplay
                 {
                     var height = _terrain.GetHeightFromTile(i, j);
 
-                    var obj = (GameObject) Instantiate(CellPrefab, new Vector3(i - Width * 0.5f + 0.5f, height - 0.7f, j - Width * 0.5f + 0.5f), Quaternion.identity, transform);
+                    var obj = (GameObject) Instantiate(CellPrefab, new Vector3(i - Width * 0.5f + 0.5f, Mathf.Max(0, height) - 0.5f, j - Width * 0.5f + 0.5f), Quaternion.identity, transform);
                     obj.name = string.Format("Cell-{0}-{1}", i, j);
 
                     var cell = obj.GetComponent<Cell>();
@@ -138,17 +151,16 @@ namespace Assets.Scripts.Gameplay
         void UpdateAppearence(Cell cell)
         {
             _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
-
-            if (Appearance != null)
-            {
-                cell.UpdateAppearance(Appearance);
-            }
+            cell.UpdateAppearance(GetAppearancesFor(cell));
         }
 
         void ClimateProcessing(Cell cell)
         {
             var distFromNorth = 1f - cell.Y/(float) Height;
             var baseTemp = MeanNorthTemp + distFromNorth * (MeanSouthTemp - MeanNorthTemp);
+            /*if (cell.Height < 0)
+                baseTemp *= 0.7f;*/
+            
             var seasonAmp = 25f + 5f * Random.value;
             var coeefYear = _step/SeasonSteps;
             var seasonTemp = baseTemp + Mathf.Sin(Mathf.PI * coeefYear) * seasonAmp;
@@ -160,17 +172,10 @@ namespace Assets.Scripts.Gameplay
         }
        
 
-        void AfterStep()
+        void AfterAllCells()
         {
-            if (TestBuff != null)
-            {
-                var randomCell = Cells[(int) (Width*UnityEngine.Random.value), (int) (Height*UnityEngine.Random.value)];
-                randomCell.ApplyBuff(TestBuff);
-            }
-
             Tracker.Step();
             _terrain.UpdateStateMap();
-            //ShowMessage(string.Format("Step {0}", _step));
         }
 
         public void ShowMessage(string text)
@@ -242,6 +247,29 @@ namespace Assets.Scripts.Gameplay
                 return;
 
             _selected.AddSpecies(species, amount);
+        }
+
+        public List<PropsAppearance> GetAppearancesFor(Cell cell)
+        {
+            var appearances = new List<PropsAppearance>();
+
+            foreach (var appearance in _appearances)
+            {
+                if (appearance.Condition.Match(cell))
+                {
+                    if (appearance.RequiredGroup != null)
+                    {
+                        if (cell.HasGroup(appearance.RequiredGroup))
+                            appearances.Add(appearance);
+                    }
+                    else
+                    {
+                        appearances.Add(appearance);
+                    }
+                }
+            }
+
+            return appearances;
         }
     }
 }

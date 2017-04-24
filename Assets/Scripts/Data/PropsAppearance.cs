@@ -3,8 +3,8 @@ using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
-    [Serializable]
-    public class PropsAppearance
+    [CreateAssetMenu(menuName = "Biology/Appearance", fileName = "Appearance")]
+    public class PropsAppearance : ScriptableObject
     {
         public string ContainerName = "GenericAppearence";
         public ClimateCondition Condition;

@@ -92,14 +92,14 @@ namespace Assets.Scripts.Gameplay
         {
             // COMFORT
             var comfort = Species.Climate.CalcComfort(cell);
-            Count = Count * comfort;
+            Count = Count * comfort * GameManager.Instance.TimeScale;
             if(Count < 1f)
                 return;
 
 
             // BATTLE FOR EATING
             // 0.5 because only "males" will participate. Or its just because same battle calculates twice
-            var power = Count*0.5f*Species.Agression;
+            var power = 0.5f * Count *  Species.Agression;
             foreach (var enemySpecies in Species.Enemies)
             {
                 if (!cell.SpeciesStates.ContainsKey(enemySpecies))
@@ -107,8 +107,8 @@ namespace Assets.Scripts.Gameplay
                     var enemy = cell.SpeciesStates[enemySpecies];
                     var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
                     var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)) * 0.721348f);
-                    Count -= Count * 0.5f * (1f - winRate);
-                    enemy.Count -= enemy.Count*0.5f*winRate;
+                    Count -= 0.5f * Count * (1f - winRate) * GameManager.Instance.TimeScale;
+                    enemy.Count -= 0.5f * enemy.Count * winRate * GameManager.Instance.TimeScale;
                 }
             }
 
@@ -130,23 +130,23 @@ namespace Assets.Scripts.Gameplay
                 var eated = 0f;
                 if (totalFoodValueAvailable > 0f)
                 {
-                    foreach (var state in statesToEat)
+                    foreach (var feed in statesToEat)
                     {
-                        var willEatFromSpecies = willEat*state.GetTotalFoodValue()/totalFoodValueAvailable;
+                        var willEatFromSpecies = willEat * feed.GetTotalFoodValue()/totalFoodValueAvailable;
                         eated += willEatFromSpecies;
-                        state.Count -= willEatFromSpecies;
+                        feed.Count -= willEatFromSpecies * GameManager.Instance.TimeScale;
                     }
                 }
                 var deficit = foodNeeded - eated;
             
                 starving = deficit/Species.Hunger;
-                willMigrate = deficit*(eated/foodNeeded)*Count;
+                willMigrate = deficit*(eated/foodNeeded) * Count;
             }
 
 
             // REPRODUCTION
             var maxCap = 10000000000f / (Species.Size + 1f);
-            Count += Count * Species.ReproductionRate;
+            Count += Count * Species.ReproductionRate * GameManager.Instance.TimeScale;
             if (Count > maxCap)
                 Count = maxCap;
 
@@ -163,7 +163,7 @@ namespace Assets.Scripts.Gameplay
                 {
                     migrated = willMigrate * migration.Chance;
                     target.AddSpecies(Species, migrated);
-                    Count -= migrated;
+                    Count -= migrated * GameManager.Instance.TimeScale;
                     willMigrate -= migrated;
                     break;
                 }
@@ -173,7 +173,7 @@ namespace Assets.Scripts.Gameplay
                 return;
 
             // DEATH FROM STARVING
-            Count = Count - (starving - migrated);
+            Count -= (starving - migrated) * GameManager.Instance.TimeScale;
 
             // MUTATION 
             foreach (var mutation in Species.Mutations)
@@ -182,7 +182,7 @@ namespace Assets.Scripts.Gameplay
                 {
                     var willMutate = mutation.Chance*Count;
                     cell.AddSpecies(mutation.Target, willMutate);
-                    Count -= willMutate;
+                    Count -= willMutate * GameManager.Instance.TimeScale;
                 }
             }
         }

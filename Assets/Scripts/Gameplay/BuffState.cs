@@ -22,6 +22,12 @@ namespace Assets.Scripts.Gameplay
             {
                 _effect = (GameObject) GameObject.Instantiate(buff.EffectPrefab, cell.transform, false);
             }
+
+            // DEPLOY PASSANGERS
+            foreach (var passanger in buff.Passangers)
+            {
+                cell.AddSpecies(passanger.Species, passanger.Count);
+            }
         }
 
         public void ProcessStep()
@@ -32,11 +38,14 @@ namespace Assets.Scripts.Gameplay
                 _cell.Climate.Humidity = Mathf.Clamp(_cell.Climate.Humidity + Buff.HumidityChange, 0, 100);
                 if (Buff.ExctinctionRate > 0f)
                 {
-                    // TODO: EARTHQUAKE
+                    foreach (var speciesState in _cell.SpeciesStates)
+                    {
+                        speciesState.Value.Count -= speciesState.Value.Count * Buff.ExctinctionRate;
+                    }
                 }
             }
 
-            Remaining -= 1f;
+            Remaining -= 1f * GameManager.Instance.TimeScale;
 
             if (Remaining <= 0f)
             {

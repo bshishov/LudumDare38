@@ -8,19 +8,19 @@ namespace Assets.Scripts.Gameplay
 {
     public class SpeciesStatsTracker
     {
-        public float StepToForget = 20f;
+        public float StepToForget = 10f;
         public List<Species> KnownSpecies = new List<Species>();
         public Dictionary<Species, float> ForgetDictionary = new Dictionary<Species, float>();
         
         public event Action<Species> NewSpecies;
         public event Action<Species> Extincted;
 
-        public float _steps;
-        public float _check = 20f;
+        private float _steps;
+        private float _check = 20f;
 
         public void Step()
         {
-            _steps += 1f;
+            _steps += 1f * GameManager.Instance.TimeScale;
             if (ForgetDictionary.Keys.Count > 0 && _steps > _check)
             {
                 foreach (var key in ForgetDictionary.Keys.ToList())

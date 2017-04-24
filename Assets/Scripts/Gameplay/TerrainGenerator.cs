@@ -32,7 +32,7 @@ namespace Assets.Scripts.Gameplay
         private float GetHeight(float u, float v)
         {
             var pixel = HeightMap.GetPixelBilinear(u, v);
-            return MinHeight + (MaxHeight - MinHeight) * HeighCurve.Evaluate(pixel.r + Random.value * 0.01f);
+            return Mathf.LerpUnclamped(MinHeight, MaxHeight, HeighCurve.Evaluate(pixel.r) + 0.01f * Random.value);
         }
 
         public void Generate()
@@ -112,19 +112,21 @@ namespace Assets.Scripts.Gameplay
                 for (var j = 0; j < Height; j++)
                 {
                     var sumHeight = 0f;
+                    var count = 0;
 
                     for (var k = 0; k < pixelsPerTileX; k++)
                     {
                         for (var l = 0; l < pixelsPerTileY; l++)
                         {
-                            var u = (i* pixelsPerTileX + k) / HeightMap.width;
+                            var u = (i *  pixelsPerTileX + k) / HeightMap.width;
                             var v = (j * pixelsPerTileX + l) / HeightMap.height;
                             
                             sumHeight += GetHeight(u, v);
+                            count++;
                         }
                     }
 
-                    var averageHeight = sumHeight/(pixelsPerTileX*pixelsPerTileY);
+                    var averageHeight = sumHeight / count;
                     _tileHeightMap[j*Width + i] = averageHeight;
                 }
             }
