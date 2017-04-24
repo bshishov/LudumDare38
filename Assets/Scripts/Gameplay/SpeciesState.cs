@@ -113,7 +113,7 @@ namespace Assets.Scripts.Gameplay
             var power = 0.5f * Count *  Species.Agression;
             foreach (var enemySpecies in Species.Enemies)
             {
-                if (!cell.SpeciesStates.ContainsKey(enemySpecies))
+                if (cell.SpeciesStates.ContainsKey(enemySpecies))
                 {
                     var enemy = cell.SpeciesStates[enemySpecies];
                     var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
