@@ -23,7 +23,7 @@ namespace Assets.Scripts.Data
         public struct Passanger
         {
             public Species Species;
-            public float Count;
+            public long Count;
         }
 
         [Header("Life")]

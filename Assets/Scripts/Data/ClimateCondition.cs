@@ -33,9 +33,9 @@ namespace Assets.Scripts.Data
             if (Terrain == TerrainCondition.PlainsOrHills && (terrainType != TerrainType.Plain && terrainType != TerrainType.Hills))
                 return 0f;
 
-            var tempMod = (state.Temperature - MinClimate.Temperature)/(MaxClimate.Temperature - MinClimate.Temperature);
-            var humidityMod = (state.Humidity - MinClimate.Humidity) / (MaxClimate.Humidity - MinClimate.Humidity);
-            return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f)) * Mathf.Clamp01(1f - Mathf.Abs(humidityMod - 0.5f));
+            var tempMod = Mathf.Abs(state.Temperature - MinClimate.Temperature) / (MaxClimate.Temperature - MinClimate.Temperature);
+            var humidityMod = Mathf.Abs(state.Humidity - MinClimate.Humidity) / (MaxClimate.Humidity - MinClimate.Humidity);
+            return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f) * 2f) * Mathf.Clamp01(1f - Mathf.Abs(humidityMod - 0.5f) * 2f);
         }
 
         public bool Match(Cell cell)

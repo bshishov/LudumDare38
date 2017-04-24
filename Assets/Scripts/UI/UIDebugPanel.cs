@@ -31,8 +31,8 @@ namespace Assets.Scripts.UI
 
         void SpawnClick()
         {
-            var amount = 0f;
-            if (float.TryParse(_spawnAmount.text, out amount))
+            long amount = 0;
+            if (long.TryParse(_spawnAmount.text, out amount))
             {
                 var specie = _species[_speciesSelect.value];
                 GameManager.Instance.SpawnInSelectedCell(specie, amount);

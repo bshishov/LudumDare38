@@ -241,7 +241,7 @@ namespace Assets.Scripts.Gameplay
             Tracker.SpeciesDied(species);
         }
 
-        public void SpawnInSelectedCell(Species species, float amount)
+        public void SpawnInSelectedCell(Species species, long amount)
         {
             if(_selected == null)
                 return;

@@ -173,11 +173,13 @@ namespace Assets.Scripts.Gameplay
         {
             if (SpeciesStates.ContainsKey(species))
             {
-                SpeciesStates[species].Count += count;
+                SpeciesStates[species].ChangeCount(count);
             }
             else
             {
-                SpeciesStates.Add(species, new SpeciesState(species) {Count = count});
+                var state = new SpeciesState(species);
+                state.ChangeCount(count);
+                SpeciesStates.Add(species, state);
 
                 if (Tracker != null)
                     Tracker.SpeciesBorn(species);

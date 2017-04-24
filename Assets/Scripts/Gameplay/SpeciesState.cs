@@ -9,7 +9,7 @@ namespace Assets.Scripts.Gameplay
     public class SpeciesState
     {
         public readonly Species Species;
-        public float Count;
+        public long Count;
         public GameObject UI;
 
         private Text _countText;
@@ -29,7 +29,7 @@ namespace Assets.Scripts.Gameplay
 
         public float GetTotalFoodValue()
         {
-            return Mathf.Max(Species.FoodValue*Count, 0f);
+            return Mathf.Max(Species.FoodValue * Count * 0.9f, 0f);
         }
 
         public void FillUIInPanel(GameObject panel)
@@ -88,12 +88,23 @@ namespace Assets.Scripts.Gameplay
             _countText.text = GetVerboseCount();
         }
 
+        public void MultiplyCount(float amount)
+        {
+            Count = (long)Mathf.Ceil(Count * amount * GameManager.Instance.TimeScale);
+        }
+
+        public void ChangeCount(float amount)
+        {
+            Count = (long)Mathf.Ceil(Count + amount * GameManager.Instance.TimeScale);
+        }
+
         public void ProcessStep(Cell cell)
         {
             // COMFORT
             var comfort = Species.Climate.CalcComfort(cell);
-            Count = Count * comfort * GameManager.Instance.TimeScale;
-            if(Count < 1f)
+            MultiplyCount(comfort);
+
+            if(Count < 1)
                 return;
 
 
@@ -107,8 +118,8 @@ namespace Assets.Scripts.Gameplay
                     var enemy = cell.SpeciesStates[enemySpecies];
                     var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
                     var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)) * 0.721348f);
-                    Count -= 0.5f * Count * (1f - winRate) * GameManager.Instance.TimeScale;
-                    enemy.Count -= 0.5f * enemy.Count * winRate * GameManager.Instance.TimeScale;
+                    ChangeCount(-0.5f * Count * (1f - winRate));
+                    enemy.ChangeCount(-0.5f * enemy.Count * winRate);
                 }
             }
 
@@ -134,7 +145,7 @@ namespace Assets.Scripts.Gameplay
                     {
                         var willEatFromSpecies = willEat * feed.GetTotalFoodValue()/totalFoodValueAvailable;
                         eated += willEatFromSpecies;
-                        feed.Count -= willEatFromSpecies * GameManager.Instance.TimeScale;
+                        feed.ChangeCount(-willEatFromSpecies);
                     }
                 }
                 var deficit = foodNeeded - eated;
@@ -145,44 +156,44 @@ namespace Assets.Scripts.Gameplay
 
 
             // REPRODUCTION
-            var maxCap = 10000000000f / (Species.Size + 1f);
-            Count += Count * Species.ReproductionRate * GameManager.Instance.TimeScale;
+            var maxCap = (long)Mathf.Floor(10000000000f / (Species.Size + 1f));
+            ChangeCount(Count * Species.ReproductionRate * comfort);
             if (Count > maxCap)
-                Count = maxCap;
+                Count = (long)maxCap;
 
-            if (Count < 1f)
+            if (Count < 1)
                 return;
 
             // MIGRATION
-            var migrated = 0f;
+            long migrated = 0;
             foreach (var migration in Species.Migrations)
             {
                 var target = cell.GetRandomNeighbour();
 
                 if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
                 {
-                    migrated = willMigrate * migration.Chance;
+                    migrated = (long)Mathf.Floor(willMigrate * migration.Chance);
                     target.AddSpecies(Species, migrated);
-                    Count -= migrated * GameManager.Instance.TimeScale;
+                    ChangeCount(-migrated);
                     willMigrate -= migrated;
                     break;
                 }
             }
 
-            if (Count < 1f)
+            if (Count < 1)
                 return;
 
             // DEATH FROM STARVING
-            Count -= (starving - migrated) * GameManager.Instance.TimeScale;
+            ChangeCount(-(starving - migrated));
 
             // MUTATION 
             foreach (var mutation in Species.Mutations)
             {
                 if (mutation.ClimateCondition.CalcComfort(cell) > 0.5f)
                 {
-                    var willMutate = mutation.Chance*Count;
+                    var willMutate = mutation.Chance * Count;
                     cell.AddSpecies(mutation.Target, willMutate);
-                    Count -= willMutate * GameManager.Instance.TimeScale;
+                    ChangeCount(-willMutate);
                 }
             }
         }
