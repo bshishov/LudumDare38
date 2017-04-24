@@ -5,10 +5,10 @@ namespace Assets.Scripts.Data
     [Flags]
     public enum TerrainType
     {
-        Water = 0,
-        Plain = 1,
-        Hills = 2,
-        Mountains = 4,
-        ShallowWater = 8,
+        Water = 1,
+        Plain = 2,
+        Hills = 4,
+        Mountains = 8,
+        ShallowWater = 16,
     }
 }

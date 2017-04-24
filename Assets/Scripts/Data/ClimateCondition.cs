@@ -19,8 +19,9 @@ namespace Assets.Scripts.Data
 
         public float CalcComfort(ClimateState state, TerrainType terrainType)
         {
-            if ((Terrain & terrainType) != terrainType)
+            if ((Terrain & terrainType) == 0)
                 return 0f;
+
             var tempMod = Mathf.Abs(state.Temperature - MinClimate.Temperature) / (MaxClimate.Temperature - MinClimate.Temperature);
             var humidityMod = Mathf.Abs(state.Humidity - MinClimate.Humidity) / (MaxClimate.Humidity - MinClimate.Humidity);
             return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f) * 2f) * Mathf.Clamp01(1f - Mathf.Abs(humidityMod - 0.5f) * 2f);
@@ -28,8 +29,9 @@ namespace Assets.Scripts.Data
 
         public bool Match(Cell cell)
         {
-            if ((Terrain & cell.TerrainType) != cell.TerrainType)
+            if ((Terrain & cell.TerrainType) == 0)
                 return false;
+
             if (cell.Climate.Temperature < MinClimate.Temperature)
                 return false;
             if (cell.Climate.Temperature > MaxClimate.Temperature)
