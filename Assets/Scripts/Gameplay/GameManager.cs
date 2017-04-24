@@ -234,12 +234,13 @@ namespace Assets.Scripts.Gameplay
 
         public void NewSpeciesOnCell(Species species, Cell cell)
         {
+            /*
             var audio = GetComponent<AudioSource>();
             if (audio != null)
             {
                 var clip = NewSpecies[Mathf.FloorToInt(Random.value*NewSpecies.Length)];
-                //audio.PlayOneShot(clip.Clip, clip.VolumeModifier);
-            }
+                audio.PlayOneShot(clip.Clip, clip.VolumeModifier);
+            }*/
 
             _lastEventCell = cell;
             Tracker.SpeciesBorn(species);

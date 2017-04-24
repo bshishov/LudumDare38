@@ -1,4 +1,5 @@
 ﻿using System;
+using Assets.Scripts.EditorExt;
 using Assets.Scripts.Gameplay;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ namespace Assets.Scripts.Data
     [Serializable]
     public struct ClimateCondition
     {
-        public TerrainCondition Terrain;
+        [SerializeField][EnumFlags] TerrainType Terrain;
         public ClimateState MinClimate;
         public ClimateState MaxClimate;
 
@@ -18,21 +19,8 @@ namespace Assets.Scripts.Data
 
         public float CalcComfort(ClimateState state, TerrainType terrainType)
         {
-            if (Terrain == TerrainCondition.NotWater && terrainType == TerrainType.Water)
+            if ((Terrain & terrainType) != terrainType)
                 return 0f;
-            if (Terrain == TerrainCondition.OnlyHills && terrainType != TerrainType.Hills)
-                return 0f;
-            if (Terrain == TerrainCondition.OnlyMountains && terrainType != TerrainType.Mountains)
-                return 0f;
-            if (Terrain == TerrainCondition.OnlyPlains && terrainType != TerrainType.Plain)
-                return 0f;
-            if (Terrain == TerrainCondition.OnlyPlains && terrainType != TerrainType.Plain)
-                return 0f;
-            if (Terrain == TerrainCondition.OnlyWater && terrainType != TerrainType.Water)
-                return 0f;
-            if (Terrain == TerrainCondition.PlainsOrHills && (terrainType != TerrainType.Plain && terrainType != TerrainType.Hills))
-                return 0f;
-
             var tempMod = Mathf.Abs(state.Temperature - MinClimate.Temperature) / (MaxClimate.Temperature - MinClimate.Temperature);
             var humidityMod = Mathf.Abs(state.Humidity - MinClimate.Humidity) / (MaxClimate.Humidity - MinClimate.Humidity);
             return Mathf.Clamp01(1f - Mathf.Abs(tempMod - 0.5f) * 2f) * Mathf.Clamp01(1f - Mathf.Abs(humidityMod - 0.5f) * 2f);
@@ -40,19 +28,7 @@ namespace Assets.Scripts.Data
 
         public bool Match(Cell cell)
         {
-            if (Terrain == TerrainCondition.NotWater && cell.TerrainType == TerrainType.Water)
-                return false;
-            if (Terrain == TerrainCondition.OnlyHills && cell.TerrainType != TerrainType.Hills)
-                return false;
-            if (Terrain == TerrainCondition.OnlyMountains && cell.TerrainType != TerrainType.Mountains)
-                return false;
-            if (Terrain == TerrainCondition.OnlyPlains && cell.TerrainType != TerrainType.Plain)
-                return false;
-            if (Terrain == TerrainCondition.OnlyPlains && cell.TerrainType != TerrainType.Plain)
-                return false;
-            if (Terrain == TerrainCondition.OnlyWater && cell.TerrainType != TerrainType.Water)
-                return false;
-            if (Terrain == TerrainCondition.PlainsOrHills && (cell.TerrainType != TerrainType.Plain && cell.TerrainType != TerrainType.Hills))
+            if ((Terrain & cell.TerrainType) != cell.TerrainType)
                 return false;
             if (cell.Climate.Temperature < MinClimate.Temperature)
                 return false;
