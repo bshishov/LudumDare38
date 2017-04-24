@@ -56,7 +56,7 @@ namespace Assets.Scripts.Gameplay
 
         void Update ()
         {
-            if (Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0) && !UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(-1))
             {
                 RaycastHit hit;
                 var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -234,6 +234,14 @@ namespace Assets.Scripts.Gameplay
         {
             _lastEventCell = cell;
             Tracker.SpeciesDied(species);
+        }
+
+        public void SpawnInSelectedCell(Species species, float amount)
+        {
+            if(_selected == null)
+                return;
+
+            _selected.AddSpecies(species, amount);
         }
     }
 }

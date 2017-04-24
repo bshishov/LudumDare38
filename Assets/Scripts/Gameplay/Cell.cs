@@ -55,12 +55,6 @@ namespace Assets.Scripts.Gameplay
             Height = height;
             _terrain = GameManager.Instance.Terrains.GetForHeight(height);
             TerrainType = _terrain.TerrainType;
-
-            if (X == 0 && Y == 0)
-            {
-                var state = new SpeciesState(InitialTestSpecies) {Count = 100};
-                SpeciesStates.Add(state.Species, state);
-            }
         }
 
         void BuildUI()
