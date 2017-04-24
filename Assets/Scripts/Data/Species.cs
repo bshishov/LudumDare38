@@ -9,8 +9,6 @@ namespace Assets.Scripts.Data
         public Sprite Icon;
         public string Name;
         public Group Group;
-
-        [Range(0, 10)]
         public int Size;
         public float FoodValue;
         public float Agression;

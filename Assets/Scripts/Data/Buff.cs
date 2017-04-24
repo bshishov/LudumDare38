@@ -6,12 +6,17 @@ using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
+    [CreateAssetMenu(menuName = "Biology/Buff", fileName = "Buff")]
     public class Buff : ScriptableObject
     {
         public float Duration = 1f;
         public Sprite Icon;
         public GameObject EffectPrefab;
-        public uint AreaWidth;
-        public uint AreaHeight;
+
+        [Header("Effect")]
+        public float TempeartureChange;
+        public float HumidityChange;
+        public float ExctinctionRate;
+        public float WaterLevelChangeRate;
     }
 }

@@ -12,6 +12,7 @@ namespace Assets.Scripts.Gameplay
     {
         public int X;
         public int Y;
+        public float Height;
         public Species InitialTestSpecies;
         public ClimateState Climate;
         public GameObject SpeciesUIPrefab;
@@ -30,6 +31,8 @@ namespace Assets.Scripts.Gameplay
         private Shaker _shaker;
         private bool _isSelected;
         private TerrainInfo _terrain;
+        private readonly List<BuffState> _currentBuffs = new List<BuffState>();
+
 
 
         void Start ()
@@ -49,14 +52,9 @@ namespace Assets.Scripts.Gameplay
 
         public void InitialSetup(float height)
         {
+            Height = height;
             _terrain = GameManager.Instance.Terrains.GetForHeight(height);
             TerrainType = _terrain.TerrainType;
-
-            Climate.Temperature = 0.0f;
-            var distFromNorth = 1f - (float)Y / GameManager.Height;
-            
-            Climate.Humidity = (1f - Mathf.Abs(distFromNorth - 0.5f) * 2f) * 80f - (height - 1f) * 25f;
-            Climate.Humidity = Mathf.Clamp(Climate.Humidity, 0, 100f);
 
             if (X == 0 && Y == 0)
             {
@@ -106,12 +104,22 @@ namespace Assets.Scripts.Gameplay
             }
         }
 
-        public void Step()
+        public void ProcessStep()
         {
+            // BUFFS PROCESSING
+            foreach (var currentBuff in _currentBuffs)
+            {
+                currentBuff.ProcessStep();
+            }
+
+            // Clear all buffs
+            _currentBuffs.RemoveAll(b => !b.IsActive);
+
+
             // SPECIES PROCESSING
             foreach (var speciesState in SpeciesStates.Values.ToList())
             {
-                speciesState.Process(this);
+                speciesState.ProcessStep(this);
                 if (speciesState.Count < 1f)
                 {
                     SpeciesStates.Remove(speciesState.Species);
@@ -271,6 +279,21 @@ namespace Assets.Scripts.Gameplay
                 actualObject.transform.localScale *= appearance.Scale + UnityEngine.Random.value * appearance.ScaleSpread;
                 actualObject.transform.Rotate(Vector3.up, appearance.Rotation + UnityEngine.Random.value * appearance.RotationSpread);
             }
+        }
+
+        public void ApplyBuff(Buff buff)
+        {
+            if (buff == null)
+                return;
+
+            // If this buff is already applied
+            if (_currentBuffs.Any(b => b.Buff.Equals(buff)))
+            {
+                return;
+            }
+
+            var buffState = new BuffState(buff, this);
+            _currentBuffs.Add(buffState);
         }
     }
 }

@@ -24,6 +24,7 @@ namespace Assets.Scripts.Gameplay
         public GameObject CellPrefab;
         public TerrainAppearance Appearance;
         public TerrainTypesCollection Terrains;
+        public Buff TestBuff;
 
         [Header("Visuals")]
         public GameObject MessagePrefab;
@@ -80,7 +81,7 @@ namespace Assets.Scripts.Gameplay
                     var y = i / Width;
                     var cell = Cells[x, y];
                     ClimateProcessing(cell);
-                    cell.Step();
+                    cell.ProcessStep();
                     UpdateAppearence(cell);
                 }
 
@@ -136,6 +137,8 @@ namespace Assets.Scripts.Gameplay
 
         void UpdateAppearence(Cell cell)
         {
+            _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
+
             if (Appearance != null)
             {
                 cell.UpdateAppearance(Appearance);
@@ -150,13 +153,21 @@ namespace Assets.Scripts.Gameplay
             var coeefYear = _step/SeasonSteps;
             var seasonTemp = baseTemp + Mathf.Sin(Mathf.PI * coeefYear) * seasonAmp;
 
+            // CALCULATE BASE TEMPERATURE
             cell.Climate.Temperature = seasonTemp;
-            _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
+            cell.Climate.Humidity = (1f - Mathf.Abs(distFromNorth - 0.5f) * 2f) * 80f - (cell.Height - 1f) * 25f;
+            cell.Climate.Humidity = Mathf.Clamp(cell.Climate.Humidity, 0, 100f);
         }
        
 
         void AfterStep()
         {
+            if (TestBuff != null)
+            {
+                var randomCell = Cells[(int) (Width*UnityEngine.Random.value), (int) (Height*UnityEngine.Random.value)];
+                randomCell.ApplyBuff(TestBuff);
+            }
+
             Tracker.Step();
             _terrain.UpdateStateMap();
             //ShowMessage(string.Format("Step {0}", _step));
