@@ -6,7 +6,7 @@ namespace Assets.Scripts.Data
     [Serializable]
     public class ClimateState
     {
-        [Range(-58, 122)]
+        [Range(-148, 212)]
         public float Temperature;
         public float Humidity;
 
