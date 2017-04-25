@@ -11,6 +11,7 @@ namespace Assets.Scripts.Gameplay
         public readonly Species Species;
         public long Count;
         public GameObject UI;
+        public float AverageAge = 0;
 
         private Text _countText;
 
@@ -29,7 +30,7 @@ namespace Assets.Scripts.Gameplay
 
         public float GetTotalFoodValue()
         {
-            return Mathf.Max(Species.FoodValue * Count * 0.9f, 0f);
+            return Mathf.Max(Species.FoodValue * Count, 0f);
         }
 
         public void FillUIInPanel(GameObject panel)
@@ -68,7 +69,14 @@ namespace Assets.Scripts.Gameplay
                 {
                     if (Species.Group != null)
                     {
-                        groupText.text = Species.Group.Name;
+                        if (!string.IsNullOrEmpty(Species.Group.Name))
+                        {
+                            groupText.text = Species.Group.Name;
+                        }
+                        else
+                        {
+                            groupText.text = Species.Group.name;
+                        }
                     }
                 }
             }
@@ -95,7 +103,9 @@ namespace Assets.Scripts.Gameplay
 
         public void ChangeCount(float amount)
         {
-            Count = (long)Mathf.Ceil(Count + amount * GameManager.Instance.TimeScale);
+            amount = amount > 0 ? Mathf.Floor(amount) : Mathf.Ceil(amount);
+
+            Count = (long) Mathf.Ceil(Count + amount*GameManager.Instance.TimeScale);
         }
 
         public void ProcessStep(Cell cell)
@@ -126,19 +136,23 @@ namespace Assets.Scripts.Gameplay
 
             // HUNGER AND EATING
             var starving = 0f;
-            var willMigrate = Count * 0.2f;
-
             if (Species.Hunger > 0f)
             {
                 var statesToEat = new List<SpeciesState>();
                 foreach (var foodGroup in Species.Feed)
                 {
-                    statesToEat.AddRange(cell.GetFromGroup(foodGroup));
+                    var foodSpecies = cell.GetFromGroup(foodGroup);
+                    foreach (var foodSpecy in foodSpecies)
+                    {
+                        if(!statesToEat.Contains(foodSpecy))
+                            statesToEat.Add(foodSpecy);
+                    }
                 }
                 var totalFoodValueAvailable = statesToEat.Sum(state => state.GetTotalFoodValue());
                 var foodNeeded = Count * Species.Hunger;
                 var willEat = Mathf.Min(foodNeeded, totalFoodValueAvailable);
                 var eated = 0f;
+
                 if (totalFoodValueAvailable > 0f)
                 {
                     foreach (var feed in statesToEat)
@@ -151,9 +165,33 @@ namespace Assets.Scripts.Gameplay
                 var deficit = foodNeeded - eated;
             
                 starving = deficit/Species.Hunger;
-                willMigrate = deficit*(eated/foodNeeded) * Count;
             }
 
+            // DEATH FROM STARVING
+            ChangeCount(-starving);
+            if (Count < 1)
+                return;
+
+            // MIGRATION
+            foreach (var migration in Species.Migrations)
+            {
+                if (migration.Chance < Random.value)
+                {
+                    var target = cell.GetRandomNeighbour();
+
+                    if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
+                    {
+                        var migrated = Count * migration.CountFactor;
+                        target.AddSpecies(Species, migrated);
+                        ChangeCount(-migrated);
+                        break;
+                    }
+                }
+            }
+            
+
+            if (Count < 1)
+                return;
 
             // REPRODUCTION
             var maxCap = (long)Mathf.Floor(10000000000f / (Species.Size + 1f));
@@ -164,36 +202,20 @@ namespace Assets.Scripts.Gameplay
             if (Count < 1)
                 return;
 
-            // MIGRATION
-            long migrated = 0;
-            foreach (var migration in Species.Migrations)
-            {
-                var target = cell.GetRandomNeighbour();
-
-                if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
-                {
-                    migrated = (long)Mathf.Floor(willMigrate * migration.Chance);
-                    target.AddSpecies(Species, migrated);
-                    ChangeCount(-migrated);
-                    willMigrate -= migrated;
-                    break;
-                }
-            }
-
-            if (Count < 1)
-                return;
-
-            // DEATH FROM STARVING
-            ChangeCount(-(starving - migrated));
-
-            // MUTATION 
+            // MUTATION
             foreach (var mutation in Species.Mutations)
             {
-                if (mutation.ClimateCondition.CalcComfort(cell) > 0.5f)
+                if (mutation.Chance < Random.value)
                 {
-                    var willMutate = mutation.Chance * Count;
-                    cell.AddSpecies(mutation.Target, willMutate);
-                    ChangeCount(-willMutate);
+                    var mutationComfort = mutation.ClimateCondition.CalcComfort(cell);
+                    // Ceil in case if there is a ONE individual and mutation procs
+                    var willMutate = mutation.CountFactor * Count * mutationComfort;
+
+                    if (willMutate > 0.2f)
+                    {
+                        cell.AddSpecies(mutation.Target, willMutate);
+                        ChangeCount(-willMutate);
+                    }
                 }
             }
         }

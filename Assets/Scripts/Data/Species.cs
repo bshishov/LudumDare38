@@ -15,6 +15,8 @@ namespace Assets.Scripts.Data
 
         [Header("Survivability")]
         public ClimateCondition Climate;
+
+        [Range(0f, 2f)]
         public float ReproductionRate;
         public float Hunger;
         public Group[] Feed;

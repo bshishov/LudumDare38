@@ -1,10 +1,12 @@
 ﻿using System;
+using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
     [Serializable]
-    public struct ClimateState
+    public class ClimateState
     {
+        [Range(-58, 122)]
         public float Temperature;
         public float Humidity;
 

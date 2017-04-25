@@ -22,7 +22,7 @@ namespace Assets.Scripts.UI
             _spawnAmount = transform.FindChild("SpawnAmount").GetComponent<InputField>();
             
             _species = Resources.LoadAll<Species>("Species");
-            Debug.LogFormat("Found {0} species", _species.Length);
+            Debug.LogFormat("Loaded {0} species", _species.Length);
             _speciesSelect.ClearOptions();
             _speciesSelect.AddOptions(_species.Select(s => s.name).ToList());
 

@@ -91,7 +91,9 @@ namespace Assets.Scripts.Gameplay
             foreach (Transform child in speciesPanel.transform)
                 Destroy(child.gameObject);
 
-            foreach (var speciesState in SpeciesStates.Values)
+            var states = SpeciesStates.Values.ToList();
+            states.Sort((a, b) => b.Species.Size.CompareTo(a.Species.Size));
+            foreach (var speciesState in states)
             {
                 var statPanel = (GameObject) Instantiate(SpeciesUIPrefab, Vector3.zero, Quaternion.identity, speciesPanel.transform);
                 speciesState.FillUIInPanel(statPanel);
@@ -148,12 +150,12 @@ namespace Assets.Scripts.Gameplay
         public void UpdateUI()
         {
             if(_temperatureText != null)
-                _temperatureText.text = String.Format("{0:##0.#}°F", Climate.Temperature);
+                _temperatureText.text = String.Format("°F {0:##0.#}\n°C {1:##0.#}", Climate.Temperature, Climate.TemperatureAsCelsius());
             //_temperatureText.text = String.Format("{0:##0.#}°C", Climate.TemperatureAsCelsius());
 
             if (_humidityText != null)
                 _humidityText.text = String.Format("{0:##0.#}%", Climate.Humidity);
-
+           
             foreach (var speciesState in SpeciesStates.Values)
             {
                 speciesState.UpdateUI();

@@ -16,7 +16,7 @@ namespace Assets.Scripts.Gameplay
         public const int CellsCount = Width * Height;
         public const float SeasonSteps = 1000f;
         public const float UpdateInterval = 0.3f;
-        public const int CellsPerUpdate = 40;
+        public const int CellsPerUpdate = 20;
 
         public const float MeanNorthTemp = 0f; // Fahrenheit
         public const float MeanSouthTemp = 100f; // Fahrenheit
@@ -99,6 +99,10 @@ namespace Assets.Scripts.Gameplay
                     ClimateProcessing(cell);
                     cell.ProcessStep();
                     UpdateAppearence(cell);
+
+                    // Update UI after the cell is processed
+                    if(cell == _selected)
+                        _selected.UpdateUI();
                 }
 
                 _lastIndex = i;
@@ -110,9 +114,6 @@ namespace Assets.Scripts.Gameplay
                     _updateTime = 0f;
                     _lastIndex = 0;
                 }
-
-                if (_selected != null)
-                    _selected.UpdateUI();
             }
         }
 

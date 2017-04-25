@@ -10,5 +10,8 @@ namespace Assets.Scripts.Data
 
         [Range(0, 1)]
         public float Chance;
+
+        [Range(0, 1)]
+        public float CountFactor;
     }
 }

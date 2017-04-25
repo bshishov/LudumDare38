@@ -4,6 +4,7 @@ namespace Assets.Scripts.Gameplay
 {
     public class AnimalWalker : MonoBehaviour
     {
+        public Vector3 ForwardDirection = Vector3.forward;
         private float _offset;
 
         void Start ()
@@ -14,8 +15,8 @@ namespace Assets.Scripts.Gameplay
         void FixedUpdate()
         {
             var vel = Mathf.Pow(Mathf.Sin(Time.time + _offset), 6);
-            transform.Translate(Vector3.forward * vel * 0.004f);
-            transform.Rotate(Vector3.up, (1f - vel) * 84f * Time.deltaTime);
+            transform.Translate(ForwardDirection * vel * 0.004f);
+            transform.Rotate(Vector3.up, (1f - vel) * 0.5f * 84f * Time.deltaTime);
         }
     }
 }
