@@ -11,8 +11,8 @@ namespace Assets.Scripts.Gameplay
 {
     public class GameManager : Singleton<GameManager>
     {
-        public const int Width = 20;
-        public const int Height = 20;
+        public const int Width = 30;
+        public const int Height = 30;
         public const int CellsCount = Width * Height;
         public const float SeasonSteps = 1000f;
         public const float UpdateInterval = 0.3f;

@@ -90,10 +90,11 @@
 			o.Albedo += itotal * dirt * tex2D(_Dirt, IN.uv_MainTex).rgb;
 			o.Albedo += itotal * sand * tex2D(_Sand, IN.uv_MainTex).rgb;
 			
+		
 
-			uint i = _SelectedCell % 20;
-			uint j = _SelectedCell / 20;
-			float isSelected = CLAMP_RANGE(IN.worldPos.x + 10.0, i, i + 1) * CLAMP_RANGE(IN.worldPos.z + 10.0, j, j + 1);
+			uint i = _SelectedCell % 30;
+			uint j = _SelectedCell / 30;
+			float isSelected = CLAMP_RANGE(IN.worldPos.x + 15.0, i, i + 1) * CLAMP_RANGE(IN.worldPos.z + 15.0, j, j + 1);
 			//o.Albedo *= 1 + isSelected * 2;
 
 
