@@ -47,6 +47,8 @@ namespace Assets.Scripts.Gameplay
             }
         }
 
+        public event Action<Spell, Cell> OnSpellCasted;
+
         private readonly List<SpellState> _states = new List<SpellState>();
         private Spell[] _spells;
         private bool _selectionActive;
@@ -179,6 +181,9 @@ namespace Assets.Scripts.Gameplay
         {
             if (_currentSpell != null && _lastHoveredCell != null)
             {
+                if (OnSpellCasted != null)
+                    OnSpellCasted(_currentSpell, _lastHoveredCell);
+                
                 GameManager.Instance.ShowMessage(string.Format("Casting <color=yellow>{0}</color>", _currentSpell.Name));
                 StartCoroutine(DelayedBuff(_currentSpell.DelayBeforeBuff, _lastHoveredCell.X, _lastHoveredCell.Y, _currentSpell));
 
@@ -193,11 +198,6 @@ namespace Assets.Scripts.Gameplay
                 var state = _states.FirstOrDefault(s => s.Spell == _currentSpell);
                 if (state != null)
                     state.Cooldown = _currentSpell.Cooldown;
-
-
-                var objManager = GetComponent<ObjectiveManager>();
-                if(objManager != null && _currentSpell.Name == "Meteor")
-                    objManager.CompleteLastObjective();
             }
         }
 

@@ -162,13 +162,19 @@ namespace Assets.Scripts.Gameplay
             }
         }
 
-        public Cell GetRandomNeighbour()
+        public IEnumerable<Cell> EnumeratNeighbours()
         {
-            var x = Mathf.Round(UnityEngine.Random.Range(X - 1.8f, X + 1f));
-            var y = Mathf.Round(UnityEngine.Random.Range(Y - 1.8f, Y + 1f));
-            x = Mathf.Clamp(x, 0, GameManager.Width - 1f);
-            y = Mathf.Clamp(y, 0, GameManager.Height - 1f);
-            return GameManager.Instance.Cells[(int)x, (int)y];
+            if(X > 1)
+                yield return GameManager.Instance.Cells[X - 1, Y];
+
+            if (X < GameManager.Width - 1)
+                yield return GameManager.Instance.Cells[X + 1, Y];
+
+            if (Y > 1)
+                yield return GameManager.Instance.Cells[X, Y - 1];
+
+            if (Y < GameManager.Height - 1)
+                yield return GameManager.Instance.Cells[X, Y + 1];
         }
 
         public void AddSpecies(Species species, float count)

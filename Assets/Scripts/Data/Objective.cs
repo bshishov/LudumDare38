@@ -8,10 +8,12 @@ namespace Assets.Scripts.Data
         public string Name;
         public string Description;
         public Sprite Icon;
-
-        [Header("Requirements")]
         public Objective RequiredObjective;
+
+
+        [Header("Triggers")]
         public Species RequiredSpecies;
         public float RequiredCount;
+        public Spell RequiredSpell;
     }
 }

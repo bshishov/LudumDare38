@@ -177,19 +177,20 @@ namespace Assets.Scripts.Gameplay
             {
                 if (migration.Chance < Random.value)
                 {
-                    var target = cell.GetRandomNeighbour();
-
-                    if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
+                    foreach (var neighbour in cell.EnumeratNeighbours())
                     {
-                        var migrated = Count * migration.CountFactor;
-                        target.AddSpecies(Species, migrated);
-                        ChangeCount(-migrated);
+                        var neigbourComfort = Species.Climate.CalcComfort(neighbour);
+                        var migrated = Count * migration.CountFactor * neigbourComfort;
+                        if (migrated > 1f)
+                        {
+                            neighbour.AddSpecies(Species, migrated);
+                            ChangeCount(-migrated);
+                        }
                         break;
                     }
                 }
             }
             
-
             if (Count < 1)
                 return;
 
