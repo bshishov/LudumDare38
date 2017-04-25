@@ -193,6 +193,11 @@ namespace Assets.Scripts.Gameplay
                 var state = _states.FirstOrDefault(s => s.Spell == _currentSpell);
                 if (state != null)
                     state.Cooldown = _currentSpell.Cooldown;
+
+
+                var objManager = GetComponent<ObjectiveManager>();
+                if(objManager != null && _currentSpell.Name == "Meteor")
+                    objManager.CompleteLastObjective();
             }
         }
 
