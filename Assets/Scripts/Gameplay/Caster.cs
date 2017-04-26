@@ -90,7 +90,12 @@ namespace Assets.Scripts.Gameplay
         void OnSpellIconClick(Spell spell)
         {
             DeactivateSelector();
-            if (spell != _currentSpell)
+            if (_selectionActive)
+            {
+                if (_currentSpell != spell)
+                    ActivateSelector(spell);
+            }
+            else
             {
                 ActivateSelector(spell);
             }

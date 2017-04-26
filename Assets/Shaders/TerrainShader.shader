@@ -74,11 +74,11 @@
 			half humidity = 255.0 * IN.vColor.g;// +_SinTime.z * 5;
 			
 			// BASE TERRAIN
-			half snow = clamp(IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0), 0, 1);  			
+			half snow = clamp(IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0) + IN_RANGE(temperature, -1000.0, -20.0), 0, 1); 
 			half dirt = IN_RANGE(temperature, 10, 40.0);			
 			half swamp = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, 50.0, 110.0);
 			half grass = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, -10.0, 110.0);
-			half sand = clamp(IN_RANGE(temperature, 50.0, 160.0) + IN_RANGE(height, -0.5, 0.2), 0, 1);
+			half sand = clamp(IN_RANGE(temperature, 50.0, 160.0) + IN_RANGE(height, -0.5, 0.2) + IN_RANGE(temperature, 160.0, 2600.0), 0, 1);
 			
 
 			half itotal = 1.0 / (snow + dirt + sand + grass + swamp + 0.01);

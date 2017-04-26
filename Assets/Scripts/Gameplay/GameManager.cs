@@ -4,6 +4,7 @@ using System.Linq;
 using Assets.Scripts.Data;
 using Assets.Scripts.Utils;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
@@ -65,6 +66,17 @@ namespace Assets.Scripts.Gameplay
             }
 
             _caster = GetComponent<Caster>();
+            _caster.OnSpellCasted += CasterOnOnSpellCasted;
+        }
+
+        private void CasterOnOnSpellCasted(Spell spell, Cell cell)
+        {
+            if (spell.Name == "Meteor")
+            {
+                var audio = GetComponent<AudioSource>();
+                if(audio)
+                    audio.PlayDelayed(2f);
+            }
         }
 
         void Update ()
@@ -282,6 +294,11 @@ namespace Assets.Scripts.Gameplay
             }
 
             return appearances;
+        }
+
+        public void Restart()
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
     }
 }
