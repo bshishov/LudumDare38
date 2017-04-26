@@ -32,7 +32,7 @@ namespace Assets.Scripts.Gameplay
         private float GetHeight(float u, float v)
         {
             var pixel = HeightMap.GetPixelBilinear(u, v);
-            return Mathf.LerpUnclamped(MinHeight, MaxHeight, HeighCurve.Evaluate(pixel.r) + 0.01f * Random.value);
+            return Mathf.LerpUnclamped(MinHeight, MaxHeight, HeighCurve.Evaluate(pixel.r) + 0.005f * Random.value);
         }
 
         public void Generate()

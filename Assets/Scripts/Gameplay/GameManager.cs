@@ -281,10 +281,14 @@ namespace Assets.Scripts.Gameplay
             {
                 if (appearance.Condition.Match(cell))
                 {
-                    if (appearance.RequiredGroup != null)
+                    if (appearance.Species != null)
                     {
-                        if (cell.HasGroup(appearance.RequiredGroup))
-                            appearances.Add(appearance);
+                        if (cell.SpeciesStates.ContainsKey(appearance.Species))
+                        {
+                            var count = cell.SpeciesStates[appearance.Species].Count;
+                            if (count > appearance.MinCount)
+                                appearances.Add(appearance);
+                        }
                     }
                     else
                     {
@@ -303,11 +307,7 @@ namespace Assets.Scripts.Gameplay
 
         public void ToggleMute()
         {
-            var audioListener = Camera.main.GetComponent<AudioListener>();
-            if (audioListener != null)
-            {
-                audioListener.enabled = !audioListener.enabled;
-            }
+            AudioListener.volume = 1 - AudioListener.volume;
         }
 
         public void PlayAudio(AudioClipWithVolume clip)

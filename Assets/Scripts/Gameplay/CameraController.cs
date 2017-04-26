@@ -10,16 +10,23 @@ namespace Assets.Scripts.Gameplay
         public float MinZoom = -1f;
         public Vector3 Bounds = new Vector3(10, 0, 10);
 
+        public float MinTiltShift = 1f;
+        public float MaxTiltShift = 7f;
+
         private bool _isPanning;
         private Vector3 _lastMousePos;
         private Vector3 _panTarget;
         private Quaternion _panRotation;
         private float _zoom = 0f;
-        
+
+        private UnityStandardAssets.ImageEffects.TiltShift _tiltShift; 
+
         void Start ()
         {
             _panTarget = transform.position;
             _panRotation = transform.rotation;
+
+            _tiltShift = GetComponent<UnityStandardAssets.ImageEffects.TiltShift>();
         }
 	
         // Update is called once per frame
@@ -50,6 +57,8 @@ namespace Assets.Scripts.Gameplay
                 var scroll = Input.GetAxis("Mouse ScrollWheel");
                 _zoom += scroll * ZoomSpeed;
                 _zoom = Mathf.Clamp(_zoom, MinZoom, MaxZoom);
+
+                _tiltShift.blurArea = Mathf.Lerp(MinTiltShift, MaxTiltShift, (_zoom - MinZoom)/(MaxZoom - MinZoom));
             }
 
             var dt = Time.deltaTime*10;
