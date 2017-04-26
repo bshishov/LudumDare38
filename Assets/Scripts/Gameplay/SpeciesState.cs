@@ -127,7 +127,7 @@ namespace Assets.Scripts.Gameplay
                 {
                     var enemy = cell.SpeciesStates[enemySpecies];
                     var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
-                    var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)) * 0.721348f);
+                    var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)+1f) * 0.721348f);
                     ChangeCount(-0.5f * Count * (1f - winRate));
                     enemy.ChangeCount(-0.5f * enemy.Count * winRate);
                 }
