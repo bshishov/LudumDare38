@@ -5,9 +5,14 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Assets.Scripts.Data;
+
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
+
 using UnityEngine;
 
+#if UNITY_EDITOR
 namespace Assets.Scripts.EditorExt
 {
     [CustomPropertyDrawer(typeof(ClimateState))]
@@ -120,3 +125,4 @@ namespace Assets.Scripts.EditorExt
         }
     }
 }
+#endif

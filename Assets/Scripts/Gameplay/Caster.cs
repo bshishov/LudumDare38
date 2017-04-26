@@ -55,7 +55,6 @@ namespace Assets.Scripts.Gameplay
         private GameObject _currentSelector;
         private Spell _currentSpell;
         private Cell _lastHoveredCell;
-
         
         
         void Start ()
@@ -89,14 +88,15 @@ namespace Assets.Scripts.Gameplay
 
         void OnSpellIconClick(Spell spell)
         {
-            DeactivateSelector();
             if (_selectionActive)
             {
+                DeactivateSelector();
                 if (_currentSpell != spell)
                     ActivateSelector(spell);
             }
             else
             {
+                DeactivateSelector();
                 ActivateSelector(spell);
             }
         }
@@ -200,6 +200,8 @@ namespace Assets.Scripts.Gameplay
                     var go = (GameObject)Instantiate(_currentSpell.Effect);
                     go.transform.position += _lastHoveredCell.transform.position;
                 }
+
+                GameManager.Instance.PlayAudio(_currentSpell.Sound);
                 
                 DeactivateSelector();
 

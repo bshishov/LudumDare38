@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Assets.Scripts.Utils;
 using UnityEngine;
 
 namespace Assets.Scripts.Data
@@ -12,6 +13,7 @@ namespace Assets.Scripts.Data
         public float Duration = 1f;
         public Sprite Icon;
         public GameObject EffectPrefab;
+        public AudioClipWithVolume SoundEffect;
 
         [Header("Effect")]
         public float TempeartureChange;

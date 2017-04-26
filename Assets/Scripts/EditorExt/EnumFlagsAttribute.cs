@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+using UnityEditor;
 using UnityEngine;
 
 namespace Assets.Scripts.EditorExt
@@ -57,3 +58,4 @@ namespace Assets.Scripts.EditorExt
         }
     }
 }
+#endif

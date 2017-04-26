@@ -10,6 +10,9 @@ using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Gameplay
 {
+    [RequireComponent(typeof(AudioSource))]
+    [RequireComponent(typeof(TerrainGenerator))]
+    [RequireComponent(typeof(Caster))]
     public class GameManager : Singleton<GameManager>
     {
         public const int Width = 30;
@@ -35,7 +38,9 @@ namespace Assets.Scripts.Gameplay
         public GameObject PointerCross;
 
         [Header("Sound")]
-        public AudioClipWithVolume[] NewSpecies;
+        public AudioClipWithVolume NewSpecies;
+        public AudioClipWithVolume SpeciesExtinct;
+        public AudioClipWithVolume Click;
 
 
         public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker { StepToForget = 20f };
@@ -49,9 +54,11 @@ namespace Assets.Scripts.Gameplay
         private Cell _lastEventCell;
         private PropsAppearance[] _appearances;
         private Caster _caster;
+        private AudioSource _audio;
 
         void Start ()
         {
+            _audio = GetComponent<AudioSource>();
             _terrain = GetComponent<TerrainGenerator>();
             BuildWorld();
 
@@ -73,9 +80,7 @@ namespace Assets.Scripts.Gameplay
         {
             if (spell.Name == "Meteor")
             {
-                var audio = GetComponent<AudioSource>();
-                if(audio)
-                    audio.PlayDelayed(2f);
+                _audio.PlayDelayed(2f);
             }
         }
 
@@ -90,6 +95,7 @@ namespace Assets.Scripts.Gameplay
 
                     if (Physics.Raycast(ray, out hit))
                     {
+                        PlayAudio(Click);
                         var cell = hit.collider.gameObject.GetComponent<Cell>();
                         if (cell != null)
                             OnCellClick(cell);
@@ -212,6 +218,7 @@ namespace Assets.Scripts.Gameplay
             if (_lastEventCell != null)
                 ShowSpeciesPointer(PointerPlus, species, _lastEventCell.transform);
             ShowMessage(string.Format("New species evolved <color=yellow>{0}</color>", species.Name));
+            PlayAudio(NewSpecies);
         }
 
         private void TrackerOnExtincted(Species species)
@@ -219,6 +226,7 @@ namespace Assets.Scripts.Gameplay
             if(_lastEventCell != null)
                 ShowSpeciesPointer(PointerCross, species, _lastEventCell.transform);
             ShowMessage(string.Format("Species <color=red>{0}</color> extincted", species.Name));
+            PlayAudio(SpeciesExtinct);
         }
 
         public void ShowSpeciesPointer(GameObject pointerPrefab, Species species, Transform target)
@@ -247,14 +255,6 @@ namespace Assets.Scripts.Gameplay
 
         public void NewSpeciesOnCell(Species species, Cell cell)
         {
-            /*
-            var audio = GetComponent<AudioSource>();
-            if (audio != null)
-            {
-                var clip = NewSpecies[Mathf.FloorToInt(Random.value*NewSpecies.Length)];
-                audio.PlayOneShot(clip.Clip, clip.VolumeModifier);
-            }*/
-
             _lastEventCell = cell;
             Tracker.SpeciesBorn(species);
         }
@@ -299,6 +299,21 @@ namespace Assets.Scripts.Gameplay
         public void Restart()
         {
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
+
+        public void ToggleMute()
+        {
+            var audioListener = Camera.main.GetComponent<AudioListener>();
+            if (audioListener != null)
+            {
+                audioListener.enabled = !audioListener.enabled;
+            }
+        }
+
+        public void PlayAudio(AudioClipWithVolume clip)
+        {
+            if(clip.Clip != null)
+                _audio.PlayOneShot(clip.Clip, clip.VolumeModifier);
         }
     }
 }

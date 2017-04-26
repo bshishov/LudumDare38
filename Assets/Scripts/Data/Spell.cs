@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Assets.Scripts.Utils;
 using UnityEngine;
 
 namespace Assets.Scripts.Data
@@ -17,6 +18,7 @@ namespace Assets.Scripts.Data
         public uint EffectWidth;
         public uint EffectHeight;
         public float DelayBeforeBuff;
+        public AudioClipWithVolume Sound;
 
         public uint HalfWidth
         {

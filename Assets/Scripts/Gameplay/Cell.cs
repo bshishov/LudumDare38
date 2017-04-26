@@ -98,6 +98,8 @@ namespace Assets.Scripts.Gameplay
                 var statPanel = (GameObject) Instantiate(SpeciesUIPrefab, Vector3.zero, Quaternion.identity, speciesPanel.transform);
                 speciesState.FillUIInPanel(statPanel);
             }
+
+            UpdateUI();
         }
 
         public void ProcessStep()

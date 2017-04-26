@@ -28,6 +28,8 @@ namespace Assets.Scripts.Gameplay
             {
                 cell.AddSpecies(passanger.Species, passanger.Count);
             }
+
+            GameManager.Instance.PlayAudio(Buff.SoundEffect);
         }
 
         public void ProcessStep()

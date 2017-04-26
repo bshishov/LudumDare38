@@ -1,5 +1,7 @@
 ﻿using System;
+#if UNITY_EDITOR
 using Assets.Scripts.EditorExt;
+#endif
 using Assets.Scripts.Gameplay;
 using Assets.Scripts.Utils;
 using UnityEngine;
@@ -15,7 +17,12 @@ namespace Assets.Scripts.Data
             Strict
         }
 
-        [SerializeField][EnumFlags] TerrainType Terrain;
+        [SerializeField]
+
+#if UNITY_EDITOR
+        [EnumFlags]
+#endif
+        TerrainType Terrain;
         public ClimateState MinClimate;
         public ClimateState MaxClimate;
         public ConditionType MatchType;
