@@ -10,7 +10,6 @@ namespace Assets.Scripts.Data
         public Sprite Icon;
         public Objective RequiredObjective;
 
-
         [Header("Triggers")]
         public Species RequiredSpecies;
         public float RequiredCount;

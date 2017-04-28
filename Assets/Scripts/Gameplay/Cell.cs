@@ -177,7 +177,6 @@ namespace Assets.Scripts.Gameplay
 
             if (Y < GameManager.Height - 1)
                 yield return GameManager.Instance.Cells[X, Y + 1];
-            yield break;
         }
 
         public Cell GetRandomNeighbour()

@@ -13,13 +13,12 @@ namespace Assets.Scripts.Data
         public Species Species;
         public uint MinCount = 0;
         
-
+        
+        [Header("Placement")]
         [Range(1, 10)]
         public uint CountMin = 1;
         [Range(1, 10)]
         public uint CountMax = 1;
-
-        [Header("Placement")]
         public float Scale = 1f;
         public float ScaleSpread = 0.2f;
         public float Rotation = 0f;

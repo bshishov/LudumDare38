@@ -173,21 +173,36 @@ namespace Assets.Scripts.Gameplay
                 return;
 
             // MIGRATION
-            foreach (var migration in Species.Migrations)
+            var cellsForMigration = cell.EnumeratNeighbours().ToList();
+            var isMigrated = false;
+            while (cellsForMigration.Count > 0)
             {
-                if (migration.Chance < Random.value)
+                var target = cellsForMigration[Mathf.FloorToInt(Random.value*cellsForMigration.Count)];
+                
+                foreach (var migration in Species.Migrations)
                 {
-                    var target = cell.GetRandomNeighbour();
-
-                    if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
+                    if (migration.Chance < Random.value)
                     {
-                        var migrated = Count * migration.CountFactor;
-                        target.AddSpecies(Species, migrated);
-                        ChangeCount(-migrated);
-                        break;
+                        if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
+                        {
+                            var migrated = Count * migration.CountFactor;
+                            target.AddSpecies(Species, migrated);
+                            ChangeCount(-migrated);
+                            isMigrated = true;
+                            break;
+                        }
                     }
                 }
+                if (isMigrated)
+                {
+                    break;
+                }
+                else
+                {
+                    cellsForMigration.Remove(target);
+                }
             }
+            
 
             if (Count < 1)
                 return;
