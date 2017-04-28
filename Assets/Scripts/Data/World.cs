@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
@@ -13,10 +12,7 @@ namespace Assets.Scripts.Data
             AnimationCurve.EaseInOut(0, -1, 1, 3);
 
         [SerializeField]
-        public TextureGenerator TextureGenerator;
-
-        [SerializeField]
-        public ProceduralGenerator ProceduralGenerator;
+        public Generator Generator;
 
         [Header("Climate")] [Range(100f, 10000f)] public float StepsPerYear = 3000f;
 
@@ -59,62 +55,7 @@ namespace Assets.Scripts.Data
 
         public float GetHeight(float u, float v)
         {
-            if(ProceduralGenerator != null)
-                return HeightCurve.Evaluate(ProceduralGenerator.GetHeight(u, v));
-
-            if (TextureGenerator != null)
-                return HeightCurve.Evaluate(TextureGenerator.GetHeight(u, v));
-
-            return 0f;
-        }
-    }
-
-    public interface IGenerator
-    {
-        float GetHeight(float u, float v);
-    }
-
-    [Serializable]
-    [CreateAssetMenu(menuName = "Biology/Generators/Texure", fileName = "Texture Generator")]
-    public class TextureGenerator : ScriptableObject, IGenerator
-    {
-        public Texture2D HeightMap;
-        public float GetHeight(float u, float v)
-        {
-            return HeightMap.GetPixelBilinear(u, v).r;
-        }
-    }
-
-    [Serializable]
-    [CreateAssetMenu(menuName = "Biology/Generators/Procedural", fileName = "Procedural Generator")]
-    public class ProceduralGenerator : ScriptableObject, IGenerator
-    {
-        public float Strength = 1f;
-        public float Fequency = 1f;
-        [Range(1, 8)]
-        public int Octaves = 1;
-        [Range(1f, 4f)]
-        public float Lacunarity = 2f;
-        [Range(0f, 1f)]
-        public float Persistence = 0.5f;
-        public bool Damping;
-        public float Offset = 0f;
-
-        public bool OverrideSeed = false;
-        public float Seed = 0f;
-
-        private float _seed;
-
-        void OnEnable()
-        {
-            _seed = OverrideSeed ? Seed : UnityEngine.Random.value;
-        }
-
-        public float GetHeight(float u, float v)
-        {
-            float amplitude = Damping ? Strength / Fequency : Strength;
-            var s = Noise.Sum(Noise.Perlin3D, new Vector3(u, v, _seed * 5f), Fequency, Octaves, Lacunarity, Persistence);
-            return s * amplitude + Offset;
+            return HeightCurve.Evaluate(Generator.GetHeight(u, v));
         }
     }
 }
