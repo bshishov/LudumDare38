@@ -18,13 +18,10 @@ namespace Assets.Scripts.Gameplay
         public const int Width = 30;
         public const int Height = 30;
         public const int CellsCount = Width * Height;
-        public const float SeasonSteps = 1000f;
         public const float UpdateInterval = 0.3f;
         public const int CellsPerUpdate = 20;
 
-        public const float MeanNorthTemp = 0f; // Fahrenheit
-        public const float MeanSouthTemp = 100f; // Fahrenheit
-
+        public World World;
         public Cell[,] Cells = new Cell[Width,Height];
         public GameObject CellPrefab;
         public TerrainTypesCollection Terrains;
@@ -178,19 +175,9 @@ namespace Assets.Scripts.Gameplay
 
         void ClimateProcessing(Cell cell)
         {
-            var distFromNorth = 1f - cell.Y/(float) Height;
-            var baseTemp = MeanNorthTemp + distFromNorth * (MeanSouthTemp - MeanNorthTemp);
-            /*if (cell.Height < 0)
-                baseTemp *= 0.7f;*/
-            
-            var seasonAmp = 25f + 5f * Random.value;
-            var coeefYear = _step/SeasonSteps;
-            var seasonTemp = baseTemp + Mathf.Sin(Mathf.PI * coeefYear) * seasonAmp;
-
-            // CALCULATE BASE TEMPERATURE
-            cell.Climate.Temperature = seasonTemp;
-            cell.Climate.Humidity = (1f - Mathf.Abs(distFromNorth - 0.5f) * 2f) * 80f - (cell.Height - 1f) * 25f;
-            cell.Climate.Humidity = Mathf.Clamp(cell.Climate.Humidity, 0, 100f);
+            var lattitude = 1f - cell.Y/(float) Height;
+            cell.Climate.Temperature = World.GetTemperature(_step, lattitude, cell.Height);
+            cell.Climate.Humidity = World.GetHumidity(_step, lattitude, cell.Height);
         }
        
 

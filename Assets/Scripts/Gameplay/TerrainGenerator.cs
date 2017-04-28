@@ -12,8 +12,8 @@ namespace Assets.Scripts.Gameplay
         public float MinHeight = -1f;
         public float MaxHeight = 2f;
 
-        public int Width = 10;
-        public int Height = 10;
+        public int Width { get { return GameManager.Width; } }
+        public int Height { get { return GameManager.Height; } }
 
         private float[] _tileHeightMap;
         private Color32[] _stateMap;
@@ -26,13 +26,11 @@ namespace Assets.Scripts.Gameplay
         
         void Update ()
         {
-		
         }
 
         private float GetHeight(float u, float v)
         {
-            var pixel = HeightMap.GetPixelBilinear(u, v);
-            return Mathf.LerpUnclamped(MinHeight, MaxHeight, HeighCurve.Evaluate(pixel.r) + 0.005f * Random.value);
+            return GameManager.Instance.World.GetHeight(u, v);
         }
 
         public void Generate()
@@ -56,8 +54,8 @@ namespace Assets.Scripts.Gameplay
             {
                 for (var j = 0; j < HeightMap.width; j++)
                 {
-                    var u = (float)i / HeightMap.width + Random.value * 0.01f;
-                    var v = (float)j / HeightMap.height + Random.value * 0.01f;
+                    var u = (float) i/HeightMap.width; //+ Random.value * 0.01f;
+                    var v = (float) j/HeightMap.height; // + Random.value * 0.01f;
 
                     var height = GetHeight(u, v);
 
@@ -92,6 +90,7 @@ namespace Assets.Scripts.Gameplay
             };
 
             mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
             _meshFilter.mesh = mesh;
 
             var meshCollider = GetComponent<MeshCollider>();

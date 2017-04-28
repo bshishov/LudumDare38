@@ -36,6 +36,7 @@
 			sampler2D _MainTex;
 			float4 _MainTex_ST;
 			fixed4 _Color;
+			uniform sampler2D _CameraDepthTexture;
 			
 			v2f vert (appdata_base v)
 			{
@@ -43,7 +44,7 @@
 				v.vertex.y = sin(v.vertex.x * 20 + v.vertex.z * 10 + _Time.z) * 0.05f;
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.uv = TRANSFORM_TEX(v.texcoord, _MainTex) + half2(_Time.y, -_Time.y) * 0.05;
-				UNITY_TRANSFER_FOG(o,o.vertex);
+				UNITY_TRANSFER_FOG(o,o.vertex);			
 
 				half3 worldNormal = UnityObjectToWorldNormal(v.normal);
 				half nl = max(0, dot(worldNormal, _WorldSpaceLightPos0.xyz));
@@ -62,10 +63,9 @@
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
-				fixed4 col = tex2D(_MainTex, i.uv) * i.diff;
-				col.a = pow(col.b, 3) * _Color.r + _Color.g;
-				//col.a = 1;
+							
+				fixed4 col = tex2D(_MainTex, i.uv) * i.diff;				
+				col.a = pow(col.b, 3) * _Color.r + _Color.g;				
 
 				// apply fog
 				UNITY_APPLY_FOG(i.fogCoord, col);
