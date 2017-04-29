@@ -54,8 +54,8 @@ namespace Assets.Scripts.Gameplay
             {
                 for (var j = 0; j < HeightMap.width; j++)
                 {
-                    var u = (float) i/HeightMap.width; //+ Random.value * 0.01f;
-                    var v = (float) j/HeightMap.height; // + Random.value * 0.01f;
+                    var u = (float) i/(HeightMap.width - 1); //+ Random.value * 0.01f;
+                    var v = (float) j/(HeightMap.height - 1); // + Random.value * 0.01f;
 
                     var height = GetHeight(u, v);
 
