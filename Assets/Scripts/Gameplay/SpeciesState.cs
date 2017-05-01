@@ -120,16 +120,16 @@ namespace Assets.Scripts.Gameplay
 
             // BATTLE FOR EATING
             // 0.5 because only "males" will participate. Or its just because same battle calculates twice
-            var power = 0.5f * Count *  Species.Agression;
+            var power = Count *  Species.Agression;
             foreach (var enemySpecies in Species.Enemies)
             {
                 if (cell.SpeciesStates.ContainsKey(enemySpecies))
                 {
                     var enemy = cell.SpeciesStates[enemySpecies];
-                    var enemyPower = enemy.Count*0.5f*enemySpecies.Agression;
+                    var enemyPower = enemy.Count * enemySpecies.Agression;
                     var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)+1f) * 0.721348f);
-                    ChangeCount(-0.5f * Count * (1f - winRate));
-                    enemy.ChangeCount(-0.5f * enemy.Count * winRate);
+                    ChangeCount(-Count * (1f - winRate));
+                    enemy.ChangeCount(-enemy.Count * winRate);
                 }
             }
 
@@ -181,7 +181,7 @@ namespace Assets.Scripts.Gameplay
                 
                 foreach (var migration in Species.Migrations)
                 {
-                    if (migration.Chance < Random.value)
+                    if (Random.value < migration.Chance)
                     {
                         if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
                         {
@@ -219,7 +219,7 @@ namespace Assets.Scripts.Gameplay
             // MUTATION
             foreach (var mutation in Species.Mutations)
             {
-                if (mutation.Chance < Random.value)
+                if (Random.value < mutation.Chance)
                 {
                     var mutationComfort = mutation.ClimateCondition.CalcComfort(cell);
                     // Ceil in case if there is a ONE individual and mutation procs
