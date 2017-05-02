@@ -7,7 +7,12 @@ namespace Assets.Scripts.Utils
     {
         void Start()
         {
-            GetComponent<Camera>().depthTextureMode = DepthTextureMode.Depth;
+            var mainCamera = GetComponent<Camera>();
+            if (mainCamera != null)
+            {
+                if (mainCamera.depthTextureMode == DepthTextureMode.None)
+                    mainCamera.depthTextureMode = DepthTextureMode.Depth;
+            }
         }
     }
 }
