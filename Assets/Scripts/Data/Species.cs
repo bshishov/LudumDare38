@@ -10,6 +10,8 @@ namespace Assets.Scripts.Data
         public string Name;
         public Group Group;
         public int Size;
+
+        // Сколько ед. еды стоит вид
         public float FoodValue;
         public float Agression;
 
@@ -18,6 +20,8 @@ namespace Assets.Scripts.Data
 
         [Range(0f, 2f)]
         public float ReproductionRate;
+
+        // Сколько "еды" требуется виду
         public float Hunger;
         public Group[] Feed;
         public Species[] Enemies;
