@@ -40,8 +40,8 @@ namespace Assets.Scripts.Data
 
             if (MatchType == ConditionType.Soft)
             {
-                return Statistics.SoftDistribution(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature)*
-                       Statistics.SoftDistribution(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity);
+                return Statistics.SoftRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature)*
+                       Statistics.SoftRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity);
             }
 
             if (state.Temperature < MinClimate.Temperature)

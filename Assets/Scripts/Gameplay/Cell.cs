@@ -33,6 +33,10 @@ namespace Assets.Scripts.Gameplay
         private TerrainInfo _terrain;
         private readonly List<BuffState> _currentBuffs = new List<BuffState>();
 
+        private Chart _populationChart;
+        private Chart _climateChart;
+        private TrackSeries _temperatureSeries;
+        private TrackSeries _humiditySeries;
 
 
         void Start ()
@@ -44,10 +48,9 @@ namespace Assets.Scripts.Gameplay
                 Tracker.NewSpecies += TrackerOnNewSpecies;
                 Tracker.Extincted += TrackerOnExtincted;
             }
-        }
 
-        void Update ()
-        {
+            _temperatureSeries = new TrackSeries(100, "Temperature (F)", Color.red);
+            _humiditySeries = new TrackSeries(100, "Humidity (%)", Color.blue);
         }
 
         public void InitialSetup(float height)
@@ -118,10 +121,13 @@ namespace Assets.Scripts.Gameplay
             foreach (var speciesState in SpeciesStates.Values.ToList())
             {
                 speciesState.ProcessStep(this);
-                if (speciesState.Count < 1f)
+                if (speciesState.Population < 1f)
                 {
                     SpeciesStates.Remove(speciesState.Species);
                     Tracker.SpeciesDied(speciesState.Species);
+
+                    if(_populationChart != null)
+                        _populationChart.RemoveSeries(speciesState.Series);
 
                     if(_isSelected)
                         BuildUI();
@@ -129,6 +135,8 @@ namespace Assets.Scripts.Gameplay
             }
             
             Tracker.Step();
+            _temperatureSeries.AddPoint(GameManager.Instance.Step, Climate.Temperature);
+            _humiditySeries.AddPoint(GameManager.Instance.Step, Climate.Humidity);
         }
 
         public void OnSelect()
@@ -136,11 +144,44 @@ namespace Assets.Scripts.Gameplay
             BuildUI();
             Shake();
             _isSelected = true;
+
+
+            _climateChart = GameObject.Find("Canvas/ClimateChart").GetComponent<Chart>();
+            if (_climateChart != null)
+            {
+                _climateChart.XAxisName = "Step";
+                _climateChart.AddSeries(_temperatureSeries);
+                _climateChart.AddSeries(_humiditySeries);
+            }
+
+            _populationChart = GameObject.Find("Canvas/PopulationChart").GetComponent<Chart>();
+            if (_populationChart != null)
+            {
+                _populationChart.XAxisName = "Step";
+                _populationChart.YAxisName = "Population, log(n)";
+
+                foreach (var speciesState in SpeciesStates)
+                {
+                    _populationChart.AddSeries(speciesState.Value.Series);
+                }
+            }
         }
 
         public void OnUnSelect()
         {
             _isSelected = false;
+
+            if (_populationChart != null)
+            {
+                _populationChart.ClearAll();
+                _populationChart = null;
+            }
+
+            if (_climateChart != null)
+            {
+                _climateChart.ClearAll();
+                _climateChart = null;
+            }
         }
 
         public void Shake()
@@ -188,17 +229,20 @@ namespace Assets.Scripts.Gameplay
             return GameManager.Instance.Cells[(int)x, (int)y];
         }
 
-        public void AddSpecies(Species species, float count)
+        public void AddSpecies(Species species, float amount, float averageAge = 0)
         {
             if (SpeciesStates.ContainsKey(species))
             {
-                SpeciesStates[species].ChangeCount(count);
+                SpeciesStates[species].IncreasePopulation(amount, averageAge);
             }
             else
             {
                 var state = new SpeciesState(species);
-                state.ChangeCount(count);
+                state.IncreasePopulation(amount, averageAge);
                 SpeciesStates.Add(species, state);
+
+                if (_populationChart != null)
+                    _populationChart.AddSeries(state.Series);
 
                 if (Tracker != null)
                     Tracker.SpeciesBorn(species);

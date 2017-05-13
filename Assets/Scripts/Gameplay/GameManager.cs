@@ -40,6 +40,7 @@ namespace Assets.Scripts.Gameplay
         public AudioClipWithVolume Click;
 
 
+        public float Step { get { return _step; } }
         public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker { StepToForget = 20f };
 
         private Cell _selected;
@@ -272,7 +273,7 @@ namespace Assets.Scripts.Gameplay
                     {
                         if (cell.SpeciesStates.ContainsKey(appearance.Species))
                         {
-                            var count = cell.SpeciesStates[appearance.Species].Count;
+                            var count = cell.SpeciesStates[appearance.Species].Population;
                             if (count > appearance.MinCount)
                                 appearances.Add(appearance);
                         }

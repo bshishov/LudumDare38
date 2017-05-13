@@ -8,21 +8,14 @@ namespace Assets.Scripts.UI
 {
     public class UIDebugPanel : MonoBehaviour
     {
-        public KeyCode Key;
-
         private Dropdown _speciesSelect;
         private Button _spawnButton;
         private InputField _spawnAmount;
 
         private Species[] _species;
-        private CanvasGroup _canvasGroup;
 
         void Start ()
         {
-            _canvasGroup = GetComponent<CanvasGroup>();
-            _canvasGroup.alpha = 0f;
-            _canvasGroup.interactable = false;
-
             _speciesSelect = transform.FindChild("SpeciesSelect").GetComponent<Dropdown>();
             _spawnButton = transform.FindChild("SpawnButton").GetComponent<Button>();
             _spawnAmount = transform.FindChild("SpawnAmount").GetComponent<InputField>();
@@ -43,15 +36,6 @@ namespace Assets.Scripts.UI
                 var specie = _species[_speciesSelect.value];
                 GameManager.Instance.SpawnInSelectedCell(specie, amount);
             }   
-        }
-
-        void Update ()
-        {
-            if (Input.GetKeyDown(Key))
-            {
-                _canvasGroup.alpha = 1f;
-                _canvasGroup.interactable = true;
-            }
         }
     }
 }

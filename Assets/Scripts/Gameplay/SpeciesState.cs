@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using Assets.Scripts.Data;
+using Assets.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,28 +10,30 @@ namespace Assets.Scripts.Gameplay
     public class SpeciesState
     {
         public readonly Species Species;
-        public long Count;
+        public long Population;
         public GameObject UI;
         public float AverageAge = 0;
 
         private Text _countText;
+        public TrackSeries Series;
 
         public SpeciesState(Species species)
         {
+            Series = new TrackSeries(100, species.Name, Random.ColorHSV(0, 1, 1, 1, 1, 1));
             Species = species;
         }
 
         public string GetVerboseCount()
         {
-            if (Count < 1f)
+            if (Population < 1f)
                 return "0";
 
-            return string.Format("{0:##,###}", Count);
+            return string.Format("{0:##,###}", Population);
         }
 
         public float GetTotalFoodValue()
         {
-            return Mathf.Max(Species.FoodValue * Count, 0f);
+            return Mathf.Max(Species.FoodValue * Population, 0f);
         }
 
         public void FillUIInPanel(GameObject panel)
@@ -96,39 +99,59 @@ namespace Assets.Scripts.Gameplay
             _countText.text = GetVerboseCount();
         }
 
-        public void MultiplyCount(float amount)
+        public void PopulationSurviveWithProba(float amount)
         {
-            Count = (long)Mathf.Ceil(Count * amount * GameManager.Instance.TimeScale);
+            Population = (long)Mathf.Ceil(Population * amount * GameManager.Instance.TimeScale);
         }
 
-        public void ChangeCount(float amount)
+        /// <summary>
+        /// Changes the population by some amount
+        /// </summary>
+        /// <param name="amount"></param>
+        public void ChangePopulation(float amount)
         {
+            // TODO: double check the float to long conversion
             amount = amount > 0 ? Mathf.Floor(amount) : Mathf.Ceil(amount);
-
-            Count = (long) Mathf.Ceil(Count + amount*GameManager.Instance.TimeScale);
+            Population = (long) Mathf.Ceil(Population + amount * GameManager.Instance.TimeScale);
         }
 
-        // This function executes for each species in each state
+        /// <summary>
+        /// Increases population considering age of the new amount. 
+        /// For exmaple some species migrated with already defined age. Or some new ones born (age = 0)
+        /// </summary>
+        /// <param name="amount">Number of new organisms</param>
+        /// <param name="age">Average age of new organisms</param>
+        public void IncreasePopulation(float amount, float age)
+        {
+            var oldPopulation = (float)Population;
+            ChangePopulation(amount);
+
+            AverageAge = AverageAge * (oldPopulation/Population) + age * (amount/Population);
+        }
+
+        /// <summary>
+        /// This function executes for each species in each state 
+        /// </summary>
+        /// <param name="cell">Home cell of this population</param>
         public void ProcessStep(Cell cell)
         {
             // COMFORT
             // Comfort - float [0 .. 1] -  коэффициент, показывающий, насколько приятно жить этому виду в этих климатических условиях
-            // 0 - некомфортно
-            // 1 - комфортно
+            // 0 - uncomfortable
+            // 1 - comfortable
             var comfort = Species.Climate.CalcComfort(cell);
 
             // Пусть те кому не комфортно - сдохнут. Если "комфорт" = 0.3, то выживет 30% популяции
-            MultiplyCount(comfort);
+            PopulationSurviveWithProba(comfort);
 
             // Если все сдохли - дальше не считать
-            if(Count < 1)
+            if(Population < 1)
                 return;
 
 
             // BATTLE FOR EATING
-            // 0.5 because only "males" will participate. Or its just because same battle calculates twice
             // считается понятие "силы" (боевой) для вида в клетке как количество умноженое на агрессию
-            var power = Count *  Species.Agression;
+            var power = Population *  Species.Agression;
 
             // Для каждого врага этого вида
             foreach (var enemySpecies in Species.Enemies)
@@ -140,21 +163,21 @@ namespace Assets.Scripts.Gameplay
                     var enemy = cell.SpeciesStates[enemySpecies];
 
                     // Рассчитать силу врага как количество индивидов врага в текущей клетке умноженное на их агрессию
-                    var enemyPower = enemy.Count * enemySpecies.Agression;
+                    var enemyPower = enemy.Population * enemySpecies.Agression;
 
                     // Считаем винрейт (от 0 до 1 float). 1 - полная победа, 0 - полное поражение
                     var winRate = Mathf.Clamp01(Mathf.Log(power/(enemyPower + 0.1f)+1f) * 0.721348f);
 
                     // Изменяем количество индивидов в зависимости от винрейта. winrate = 0 - все сдохли, winrate = 1 - все выжили
-                    ChangeCount(-Count * (1f - winRate));
+                    ChangePopulation(-Population * (1f - winRate));
 
                     // Точно также меняем количество индивидов у врага
-                    enemy.ChangeCount(-enemy.Count * winRate);
+                    enemy.ChangePopulation(-enemy.Population * winRate);
                 }
             }
 
             // Если все сдохли - дальше не считать
-            if (Count < 1)
+            if (Population < 1)
                 return;
 
             // HUNGER AND EATING
@@ -183,7 +206,7 @@ namespace Assets.Scripts.Gameplay
                 var totalFoodValueAvailable = statesToEat.Sum(state => state.GetTotalFoodValue());
 
                 // Сколько еды нам нужно?
-                var foodNeeded = Count * Species.Hunger;
+                var foodNeeded = Population * Species.Hunger;
 
                 // Сколько мы еды съедим? Суммарно, в ед. еды
                 var willEat = Mathf.Min(foodNeeded, totalFoodValueAvailable);
@@ -204,7 +227,7 @@ namespace Assets.Scripts.Gameplay
                         eated += willEatFromSpecies;
 
                         // уменьшаем популяцию съедобного вида
-                        feed.ChangeCount(-willEatFromSpecies / feed.Species.FoodValue);
+                        feed.ChangePopulation(-willEatFromSpecies / feed.Species.FoodValue);
                     }
                 }
 
@@ -213,11 +236,11 @@ namespace Assets.Scripts.Gameplay
             
                 // Считаем сколько индивидов голодает
                 // Голодающие умирают
-                ChangeCount(-(deficit / Species.Hunger));
+                ChangePopulation(-(deficit / Species.Hunger));
             }
 
             // Если все сдохли - дальше не считать
-            if (Count < 1)
+            if (Population < 1)
                 return;
 
             // MIGRATION
@@ -231,7 +254,7 @@ namespace Assets.Scripts.Gameplay
             while (cellsForMigration.Count > 0)
             {
                 // Берем рандомную клетку-соседа
-                var target = cellsForMigration[Mathf.FloorToInt(Random.value*cellsForMigration.Count)];
+                var target = cellsForMigration[Mathf.FloorToInt(Random.value*(cellsForMigration.Count - 1))];
                 
                 // Для каждой возможной миграции текущего вида
                 foreach (var migration in Species.Migrations)
@@ -243,13 +266,14 @@ namespace Assets.Scripts.Gameplay
                         if (migration.ClimateCondition.CalcComfort(cell) > 0.5f)
                         {
                             // Количество мигрировавших = количество индивидов умноженное на процент миграции
-                            var migrated = Count * migration.CountFactor;
+                            var migrated = Population * migration.CountFactor;
 
-                            // В клетку соседа добавляем существ в количичестве migrated
-                            target.AddSpecies(Species, migrated);
+                            // Add migrated organisms to the neighbour cell. 
+                            // Note that migrating organisms inheriting population's average age.
+                            target.AddSpecies(Species, migrated, AverageAge);
 
-                            // Из текущей клетки убираем существ
-                            ChangeCount(-migrated);
+                            // Remove migrated organisms from this state since they are now managed in another cell.
+                            ChangePopulation(-migrated);
 
                             // ставим флаг что мигрировали
                             isMigrated = true;
@@ -269,24 +293,28 @@ namespace Assets.Scripts.Gameplay
 
 
             // Если все сдохли - дальше не считать
-            if (Count < 1)
+            if (Population < 1)
                 return;
 
-            // REPRODUCTION
+            // REPRODUCTION / INTERBREEDING
             // Сичтаем максимально-возможное количество индивидов в этой клетке (в зависимости от Size)
             var maxCap = (long)Mathf.Floor(10000000000f / (Species.Size + 1f));
 
-            // Прибавляем к популяции 
-            ChangeCount(Count * Species.ReproductionRate * comfort);
+            // Increase the population by some amount depending on reproduction rate and comfort
+            // Average age of the new part of population is 0
+            IncreasePopulation(Population * Species.ReproductionRate * comfort, 0);
 
             // Если больше максимума, то количество = максимум
-            if (Count > maxCap)
-                Count = (long)maxCap;
-
+            if (Population > maxCap)
+                Population = (long)maxCap;
 
             // Если все сдохли - дальше не считать
-            if (Count < 1)
+            if (Population < 1)
                 return;
+
+            // MORTALITY
+            // Calculate death rate according to "Gompertz–Makeham law of mortality"
+            // TODO: IMPLEMENT
 
             // MUTATION
             // Для каждой возможной мутации
@@ -299,19 +327,23 @@ namespace Assets.Scripts.Gameplay
                     var mutationComfort = mutation.ClimateCondition.CalcComfort(cell);
 
                     // Считаем сколько индивидов мутирует
-                    var willMutate = mutation.CountFactor * Count * mutationComfort;
+                    var willMutate = mutation.CountFactor * Population * mutationComfort;
 
                     // Если мутирует больше 0.2 индивидов
                     if (willMutate > 0.2f)
                     {
-                        // Добавить новый вид в клетку в количестве willMutate
-                        cell.AddSpecies(mutation.Target, willMutate);
+                        // Add new mutated species to this cell. 
+                        // Note that mutated population inherits its average age.
+                        cell.AddSpecies(mutation.Target, willMutate, AverageAge);
 
-                        // убираем willMutate индивидов текущего вида
-                        ChangeCount(-willMutate);
+                        // Remove mutated species from this state since they are now managed in another one.
+                        ChangePopulation(-willMutate);
                     }
                 }
             }
+
+            if(Series != null)
+                Series.AddPoint(GameManager.Instance.Step, Mathf.Log10(Population + 1));
         }
     }
 }

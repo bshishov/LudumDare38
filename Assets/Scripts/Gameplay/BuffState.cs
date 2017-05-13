@@ -42,7 +42,7 @@ namespace Assets.Scripts.Gameplay
                 {
                     foreach (var speciesState in _cell.SpeciesStates)
                     {
-                        speciesState.Value.Count -= (long)Mathf.Floor(speciesState.Value.Count * Buff.ExctinctionRate);
+                        speciesState.Value.Population -= (long)Mathf.Floor(speciesState.Value.Population * Buff.ExctinctionRate);
                     }
                 }
             }
