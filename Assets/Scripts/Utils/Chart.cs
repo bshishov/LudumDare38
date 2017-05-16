@@ -260,7 +260,7 @@ namespace Assets.Scripts.Utils
             var sy2 = Mathf.Ceil(ylogRange);
 
             var ay2 = (sy2 - ylogRange);
-            var ay1 = (ylogRange - sy1);
+            //var ay1 = (ylogRange - sy1);
             
 
             var dy1 = Mathf.Pow(10f, sy1 - 1); // Small ticks
@@ -274,7 +274,7 @@ namespace Assets.Scripts.Utils
             var sx2 = Mathf.Ceil(xlogRange);
 
             var ax2 = (sx2 - xlogRange);
-            var ax1 = (xlogRange - sx1);
+            //var ax1 = (xlogRange - sx1);
 
 
             var dx1 = Mathf.Pow(10f, sx1 - 1); // Small ticks
