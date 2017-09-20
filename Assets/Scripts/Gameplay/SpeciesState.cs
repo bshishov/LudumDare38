@@ -39,7 +39,7 @@ namespace Assets.Scripts.Gameplay
         public void FillUIInPanel(GameObject panel)
         {
             UI = panel;
-            var nameObj = UI.transform.FindChild("Name");
+            var nameObj = UI.transform.Find("Name");
             if (nameObj != null)
             {
                 var nameText = nameObj.GetComponent<Text>();
@@ -50,7 +50,7 @@ namespace Assets.Scripts.Gameplay
             }
 
 
-            var iconObj = UI.transform.FindChild("Icon");
+            var iconObj = UI.transform.Find("Icon");
             if (iconObj != null)
             {
                 var icon = iconObj.GetComponent<Image>();
@@ -64,7 +64,7 @@ namespace Assets.Scripts.Gameplay
             }
 
 
-            var groupObj = UI.transform.FindChild("Group");
+            var groupObj = UI.transform.Find("Group");
             if (groupObj != null)
             {
                 var groupText = groupObj.GetComponent<Text>();
@@ -84,7 +84,7 @@ namespace Assets.Scripts.Gameplay
                 }
             }
 
-            var countObj = UI.transform.FindChild("Count");
+            var countObj = UI.transform.Find("Count");
             if (countObj != null)
             {
                 _countText = countObj.GetComponent<Text>();

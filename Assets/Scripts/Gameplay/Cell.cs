@@ -304,7 +304,7 @@ namespace Assets.Scripts.Gameplay
                 var currentAppearance = ActiveAppearances[index];
                 if (!validAppearances.Contains(currentAppearance))
                 {
-                    var container = transform.FindChild(currentAppearance.name);
+                    var container = transform.Find(currentAppearance.name);
                     if (container != null)
                         Destroy(container.gameObject);
 
@@ -318,7 +318,7 @@ namespace Assets.Scripts.Gameplay
                 if (ActiveAppearances.Contains(appearance))
                     continue;
 
-                var container = transform.FindChild(appearance.name);
+                var container = transform.Find(appearance.name);
                 if (container == null)
                 {
                     container = new GameObject(appearance.name).transform;

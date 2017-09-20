@@ -16,9 +16,9 @@ namespace Assets.Scripts.UI
 
         void Start ()
         {
-            _speciesSelect = transform.FindChild("SpeciesSelect").GetComponent<Dropdown>();
-            _spawnButton = transform.FindChild("SpawnButton").GetComponent<Button>();
-            _spawnAmount = transform.FindChild("SpawnAmount").GetComponent<InputField>();
+            _speciesSelect = transform.Find("SpeciesSelect").GetComponent<Dropdown>();
+            _spawnButton = transform.Find("SpawnButton").GetComponent<Button>();
+            _spawnAmount = transform.Find("SpawnAmount").GetComponent<InputField>();
             
             _species = Resources.LoadAll<Species>("Species");
             Debug.LogFormat("Loaded {0} species", _species.Length);
