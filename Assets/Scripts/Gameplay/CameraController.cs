@@ -19,14 +19,11 @@ namespace Assets.Scripts.Gameplay
         private Quaternion _panRotation;
         private float _zoom = 0f;
 
-        private UnityStandardAssets.ImageEffects.TiltShift _tiltShift; 
 
         void Start ()
         {
             _panTarget = transform.position;
             _panRotation = transform.rotation;
-
-            _tiltShift = GetComponent<UnityStandardAssets.ImageEffects.TiltShift>();
         }
 	
         // Update is called once per frame
@@ -57,8 +54,6 @@ namespace Assets.Scripts.Gameplay
                 var scroll = Input.GetAxis("Mouse ScrollWheel");
                 _zoom += scroll * ZoomSpeed;
                 _zoom = Mathf.Clamp(_zoom, MinZoom, MaxZoom);
-
-                _tiltShift.blurArea = Mathf.Lerp(MinTiltShift, MaxTiltShift, (_zoom - MinZoom)/(MaxZoom - MinZoom));
             }
 
             var dt = Time.deltaTime*10;
