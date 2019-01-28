@@ -254,7 +254,7 @@ namespace Assets.Scripts.Gameplay
             while (cellsForMigration.Count > 0)
             {
                 // Берем рандомную клетку-соседа
-                var target = cellsForMigration[Mathf.FloorToInt(Random.value*(cellsForMigration.Count - 1))];
+                var target = cellsForMigration[Mathf.RoundToInt(Random.value*(cellsForMigration.Count - 1))];
                 
                 // Для каждой возможной миграции текущего вида
                 foreach (var migration in Species.Migrations)
