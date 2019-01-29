@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using Assets.Scripts.Utils;
 using UnityEngine;
 
@@ -14,6 +11,7 @@ namespace Assets.Scripts.Data
         public Sprite Icon;
         public GameObject EffectPrefab;
         public AudioClipWithVolume SoundEffect;
+        public float DecayTime = 1f;
 
         [Header("Effect")]
         public float TempeartureChange;

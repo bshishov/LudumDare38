@@ -6,7 +6,7 @@ namespace Assets.Scripts.Gameplay
     public class BuffState
     {
         public readonly Buff Buff;
-        public bool IsActive { get { return Remaining > 0f; } }
+        public bool IsActive { get { return Remaining > -Buff.DecayTime; } }
         public float Remaining;
 
         private readonly Cell _cell;
@@ -32,8 +32,10 @@ namespace Assets.Scripts.Gameplay
             GameManager.Instance.PlayAudio(Buff.SoundEffect);
         }
 
-        public void ProcessStep()
+        public void ProcessStep(float dt)
         {
+            // Buffs are updated after global climate calculations and before species in cell
+            // So climate can be easily overriden by the buff
             if (Remaining > 0f)
             {
                 _cell.Climate.Temperature = Mathf.Clamp(_cell.Climate.Temperature + Buff.TempeartureChange, -100, 200);
@@ -47,10 +49,21 @@ namespace Assets.Scripts.Gameplay
                 }
             }
 
-            Remaining -= 1f * GameManager.Instance.TimeScale;
+            // Updates are called once in a while (approx. 1 / sec)
+            // as GameManager decides
+            Remaining -= GameManager.Instance.TimeScale * dt;
 
-            if (Remaining <= 0f)
+            // If we are in the decay step
+            // linearly decay the buff climate effects
+            if (Remaining < 0)
             {
+                var k = 1 - Mathf.Clamp01(Mathf.Abs(Remaining) / Buff.DecayTime);
+                
+                _cell.Climate.Temperature = Mathf.Clamp(_cell.Climate.Temperature + k * Buff.TempeartureChange, -100, 200);
+                _cell.Climate.Humidity = Mathf.Clamp(_cell.Climate.Humidity + k * Buff.HumidityChange, 0, 100);
+
+                // Effect has to be removed right after main buff duration is gone
+                // But decay is still happening
                 if (_effect != null)
                 {
                     GameObject.Destroy(_effect);

@@ -18,8 +18,8 @@ namespace Assets.Scripts.Gameplay
         public const int Width = 30;
         public const int Height = 30;
         public const int CellsCount = Width * Height;
-        public const float UpdateInterval = 0.3f;
-        public const int CellsPerUpdate = 20;
+        public const float UpdateInterval = 0.1f;
+        public const int CellsPerUpdate = 60;
 
         public World World;
         public Cell[,] Cells = new Cell[Width,Height];
@@ -46,6 +46,8 @@ namespace Assets.Scripts.Gameplay
         private Cell _selected;
         private float _step;
         private float _updateTime = 0f;
+        private float _deltaTime = 0f;
+
         private int _lastIndex = 0;
         private GameObject _messagesPanel;
         private TerrainGenerator _terrain;
@@ -67,7 +69,7 @@ namespace Assets.Scripts.Gameplay
             if (Tracker != null)
             {
                 Tracker.NewSpecies += TrackerOnNewSpecies;
-                Tracker.Extincted += TrackerOnExtincted;
+                //Tracker.Extincted += TrackerOnExtincted;
             }
 
             _caster = GetComponent<Caster>();
@@ -113,8 +115,8 @@ namespace Assets.Scripts.Gameplay
                     var y = i / Width;
                     var cell = Cells[x, y];
                     ClimateProcessing(cell);
-                    cell.ProcessStep();
-                    UpdateAppearence(cell);
+                    cell.ProcessStep(_deltaTime);
+                    UpdateAppearance(cell);
 
                     // Update UI after the cell is processed
                     if(cell == _selected)
@@ -125,8 +127,9 @@ namespace Assets.Scripts.Gameplay
 
                 if (_lastIndex >= CellsCount - 1)
                 {
-                    AfterAllCells();
+                    AfterAllCellsUpdated();
                     _step += 1f * TimeScale;
+                    _deltaTime = _updateTime;
                     _updateTime = 0f;
                     _lastIndex = 0;
                 }
@@ -168,7 +171,7 @@ namespace Assets.Scripts.Gameplay
             }
         }
 
-        void UpdateAppearence(Cell cell)
+        void UpdateAppearance(Cell cell)
         {
             _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
             cell.UpdateAppearance(GetAppearancesFor(cell));
@@ -176,13 +179,12 @@ namespace Assets.Scripts.Gameplay
 
         void ClimateProcessing(Cell cell)
         {
-            var lattitude = 1f - cell.Y/(float) Height;
-            cell.Climate.Temperature = World.GetTemperature(_step, lattitude, cell.Height);
-            cell.Climate.Humidity = World.GetHumidity(_step, lattitude, cell.Height);
+            var latitude = 1f - cell.Y/(float) Height;
+            cell.Climate.Temperature = World.GetTemperature(_step, latitude, cell.Height);
+            cell.Climate.Humidity = World.GetHumidity(_step, latitude, cell.Height);
         }
-       
 
-        void AfterAllCells()
+        void AfterAllCellsUpdated()
         {
             Tracker.Step();
             _terrain.UpdateStateMap();

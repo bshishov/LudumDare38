@@ -13,7 +13,6 @@ namespace Assets.Scripts.Gameplay
         public int X;
         public int Y;
         public float Height;
-        public Species InitialTestSpecies;
         public ClimateState Climate;
         public GameObject SpeciesUIPrefab;
         public readonly Dictionary<Species, SpeciesState> SpeciesStates = new Dictionary<Species, SpeciesState>();
@@ -31,7 +30,7 @@ namespace Assets.Scripts.Gameplay
         private Shaker _shaker;
         private bool _isSelected;
         private TerrainInfo _terrain;
-        private readonly List<BuffState> _currentBuffs = new List<BuffState>();
+        private readonly List<BuffState> _activeBuffs = new List<BuffState>();
 
         private Chart _populationChart;
         private Chart _climateChart;
@@ -105,16 +104,14 @@ namespace Assets.Scripts.Gameplay
             UpdateUI();
         }
 
-        public void ProcessStep()
+        public void ProcessStep(float dt)
         {
             // BUFFS PROCESSING
-            foreach (var currentBuff in _currentBuffs)
-            {
-                currentBuff.ProcessStep();
-            }
+            foreach (var currentBuff in _activeBuffs)
+                currentBuff.ProcessStep(dt);
 
-            // Clear all buffs
-            _currentBuffs.RemoveAll(b => !b.IsActive);
+            // Clear all inactive buffs
+            _activeBuffs.RemoveAll(b => !b.IsActive);
 
 
             // SPECIES PROCESSING
@@ -205,7 +202,7 @@ namespace Assets.Scripts.Gameplay
             }
         }
 
-        public IEnumerable<Cell> EnumeratNeighbours()
+        public IEnumerable<Cell> EnumerateNeighbors()
         {
             if(X > 1)
                 yield return GameManager.Instance.Cells[X - 1, Y];
@@ -220,7 +217,7 @@ namespace Assets.Scripts.Gameplay
                 yield return GameManager.Instance.Cells[X, Y + 1];
         }
 
-        public Cell GetRandomNeighbour()
+        public Cell GetRandomNeighbor()
         {
             var x = Mathf.Round(UnityEngine.Random.Range(X - 1.8f, X + 1f));
             var y = Mathf.Round(UnityEngine.Random.Range(Y - 1.8f, Y + 1f));
@@ -352,16 +349,13 @@ namespace Assets.Scripts.Gameplay
                 return;
 
             // If this buff is already applied
-            if (_currentBuffs.Any(b => b.Buff.Equals(buff)))
-            {
+            if (_activeBuffs.Any(b => b.Buff.Equals(buff)))
                 return;
-            }
-
-            var buffState = new BuffState(buff, this);
-            _currentBuffs.Add(buffState);
+            
+            _activeBuffs.Add(new BuffState(buff, this));
         }
 
-        public Vector3 GetPlacementCorrecrion()
+        public Vector3 GetPlacementCorrection()
         {
             if (TerrainType == TerrainType.Water)
             {

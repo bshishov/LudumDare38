@@ -18,10 +18,19 @@ namespace Assets.Scripts.Gameplay
         private float[] _tileHeightMap;
         private Color32[] _stateMap;
         private MeshFilter _meshFilter;
+        private Texture2D _stateTexture;
+        private MeshRenderer _renderer;
 
         void Awake()
         {
             _meshFilter = GetComponent<MeshFilter>();
+        }
+
+        void Start()
+        {
+            _stateTexture = new Texture2D(Width, Height, TextureFormat.RGFloat, false);
+            _renderer = GetComponent<MeshRenderer>();
+            _renderer.material.SetTexture("_State", _stateTexture);
         }
         
         void Update ()
@@ -140,6 +149,15 @@ namespace Assets.Scripts.Gameplay
 
         public void SetStateToTile(int x, int y, ClimateState state)
         {
+            // [IMPORTANT] keep the settings with the corresponding shader values
+            var c = new Color
+            {
+                r = Mathf.Clamp01(state.TemperatureAsCelsius() / 200f + 0.5f),
+                g = Mathf.Clamp01(state.Humidity / 100f)
+            };
+            _stateTexture.SetPixel(x, y, c);
+
+            // Old - vertex based
             var color = new Color32
             {
                 r = (byte) (int) (Mathf.Clamp(state.Temperature + 100f, 0, 255f)),
@@ -163,12 +181,19 @@ namespace Assets.Scripts.Gameplay
 
         public void UpdateStateMap()
         {
+            _stateTexture.Apply();
             _meshFilter.mesh.colors32 = _stateMap;
         }
 
         public void SelectCell(int x, int y)
         {
-            GetComponent<MeshRenderer>().material.SetInt("_SelectedCell", y * Width + x);
+            _renderer.material.SetInt("_SelectedCell", y * Width + x);
         }
+
+        /*
+        public void OnGUI()
+        {
+            GUI.DrawTexture(new Rect(0, 0, 512, 512), _stateTexture);
+        }*/
     }
 }

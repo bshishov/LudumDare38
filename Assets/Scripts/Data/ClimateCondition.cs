@@ -14,7 +14,11 @@ namespace Assets.Scripts.Data
         public enum ConditionType
         {
             Soft,
-            Strict
+            Strict,
+            DoubleSigmoid10,
+            DoubleSigmoid20,
+            DoubleSigmoid50,
+            DoubleSigmoid100
         }
 
         [SerializeField]
@@ -40,10 +44,35 @@ namespace Assets.Scripts.Data
 
             if (MatchType == ConditionType.Soft)
             {
-                return Statistics.SoftRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature)*
+                return Statistics.SoftRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature) *
                        Statistics.SoftRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity);
             }
 
+            if (MatchType == ConditionType.DoubleSigmoid10)
+            {
+                return Statistics.DoubleSigmoidRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature, 10f) *
+                       Statistics.DoubleSigmoidRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity, 10f);
+            }
+
+            if (MatchType == ConditionType.DoubleSigmoid20)
+            {
+                return Statistics.DoubleSigmoidRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature, 20f) *
+                       Statistics.DoubleSigmoidRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity, 20f);
+            }
+
+            if (MatchType == ConditionType.DoubleSigmoid50)
+            {
+                return Statistics.DoubleSigmoidRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature, 50f) *
+                       Statistics.DoubleSigmoidRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity, 50f);
+            }
+
+            if (MatchType == ConditionType.DoubleSigmoid100)
+            {
+                return Statistics.DoubleSigmoidRange(state.Temperature, MinClimate.Temperature, MaxClimate.Temperature, 100f) *
+                       Statistics.DoubleSigmoidRange(state.Humidity, MinClimate.Humidity, MaxClimate.Humidity, 100f);
+            }
+
+            // MatchType == ConditionType.Strict
             if (state.Temperature < MinClimate.Temperature)
                 return 0f;
             if (state.Temperature > MaxClimate.Temperature)

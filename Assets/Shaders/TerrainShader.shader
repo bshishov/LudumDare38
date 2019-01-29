@@ -1,10 +1,14 @@
 ﻿Shader "Custom/TerrainShader" {
 	Properties {
 		_GridColor ("Grid Color", Color) = (1,1,1,1)
-		_MainTex ("Albedo (RGB)", 2D) = "white" {}
+		
 		_Ramp("Lightning Ramp", 2D) = "white" {}
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
 		_Metallic ("Metallic", Range(0,1)) = 0.0
+
+		_MainTex("Bedrock", 2D) = "white" {}
+
+		_State("State", 2D) = "white" {}
 
 		_Dirt("Dirt", 2D) = "white" {}
 		_Sand("Sand", 2D) = "white" {}
@@ -14,7 +18,12 @@
 
 		_Grid("Grid", 2D) = "white" {}
 		_SelectedCell("Metallic", int) = 0 
+		_Scale("Scale", float) = 1
 
+		_NoiseMap("Noise", 2D) = "white" {}
+		_NoiseScale("Noise Scale",float) = 1
+		_NoiseBlendSharpness("Noise Blend Sharpness",float) = 1
+		
 	}
 	SubShader {
 		Tags { "RenderType"="Opaque" }
@@ -29,6 +38,7 @@
 		#pragma target 3.0
 
 		sampler2D _MainTex;
+		sampler2D _State;
 		sampler2D _Dirt;
 		sampler2D _Sand;
 		sampler2D _Snow;
@@ -36,6 +46,10 @@
 		sampler2D _Swamp;
 		sampler2D _Ramp;		
 		sampler2D _Grid;
+		sampler2D _NoiseMap;
+		
+		float _NoiseScale;
+		float _NoiseBlendSharpness;
 
 		half4 LightingRamp(SurfaceOutput s, half3 lightDir, half atten) {
 			half NdotL = dot(s.Normal, lightDir);
@@ -49,38 +63,159 @@
 
 		struct Input {
 			float2 uv_MainTex;
+			float2 uv_State;
 			float2 uv_Grid;
-			float4 vColor : COLOR;
+			//float4 vColor : COLOR;
 			float3 worldPos;
+			float3 worldNormal;
 		};
 
 		half _Glossiness;
 		half _Metallic;
 		fixed4 _GridColor;
 		int _SelectedCell;
-
-		//#define RESCALE(X,A,B) (abs((X) - (A)) / abs((B) - (A)))
+				
 		#define RESCALE(X,A,B) (distance(X, A) / distance(B, A))
-		#define CLAMP_RANGE(X,A,B) clamp(sign((X) - (A)) * sign((B) - (X)), 0, 1)
-		//#define IN_RANGE(X,A,B) (1.0 - (clamp(RESCALE(X,A,B), 0.0, 1.0) - 0.5) * 2.0)		
-		#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B) * (1 - abs(RESCALE(X, A, B) - 0.5) * 2.0)
-		//#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B)
+		#define CLAMP_RANGE(X,A,B) clamp(sign((X) - (A)) * sign((B) - (X)), 0, 1)		
+		#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B) * (1 - abs(RESCALE(X, A, B) - 0.5) * 2.0)		
+
+		//static const half smoothFactor = 10;
+
+		half moreThan(half x, half a, half smoothFactor = 10)
+		{	
+			return 1 / (1 + exp((a - x) / smoothFactor));
+		}
+
+		half lessThan(half x, half b, half smoothFactor = 10)
+		{	
+			return 1 / (1 + exp((x - b) / smoothFactor));
+		}
+
+		half between(half x, half a, half b, half smoothFactor=10)
+		{	
+			half p1 = 1 + exp((a - x) / smoothFactor);
+			half p2 = 1 + exp((x - b) / smoothFactor);
+			return 1 / (p1 * p2);
+		}
+
+		half not(half x) { return 1 - x; }
 
 		void surf(Input IN, inout SurfaceOutputStandard  o)
 		{
-			fixed dissolve = tex2D(_MainTex, IN.uv_MainTex).r;
-			half height = IN.worldPos.y;
-			half temperature = 255.0 * IN.vColor.r - 100.0;// +_SinTime.z * 5;
-			half humidity = 255.0 * IN.vColor.g;// +_SinTime.z * 5;
-			
-			// BASE TERRAIN
-			half snow = clamp(IN_RANGE(temperature, -20.0, 40.0) + IN_RANGE(height, 1.2, 3.0) + IN_RANGE(temperature, -1000.0, -20.0), 0, 1); 
-			half dirt = IN_RANGE(temperature, 10, 40.0);			
-			half swamp = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, 50.0, 110.0);
-			half grass = IN_RANGE(temperature, 25.0, 100.0) * IN_RANGE(humidity, -10.0, 110.0);
-			half sand = clamp(IN_RANGE(temperature, 50.0, 160.0) + IN_RANGE(height, -0.5, 0.2) + IN_RANGE(temperature, 160.0, 2600.0), 0, 1);
-			
+			// Find our UVs for each axis based on world position of the fragment.
+			half2 yUV = IN.worldPos.xz / _NoiseScale;
+			half2 xUV = IN.worldPos.zy / _NoiseScale;
+			half2 zUV = IN.worldPos.xy / _NoiseScale;
+			// Now do texture samples from our diffuse map with each of the 3 UV set's we've just made.
+			half yDiff = tex2D(_NoiseMap, yUV).r;
+			half xDiff = tex2D(_NoiseMap, xUV).r;
+			half zDiff = tex2D(_NoiseMap, zUV).r;
+			// Get the absolute value of the world normal.
+			// Put the blend weights to the power of BlendSharpness, the higher the value, 
+			// the sharper the transition between the planar maps will be.
+			half3 blendWeights = pow(abs(IN.worldNormal), _NoiseBlendSharpness);
+			// Divide our blend mask by the sum of it's components, this will make x+y+z=1
+			blendWeights = blendWeights / (blendWeights.x + blendWeights.y + blendWeights.z);
+			// Finally, blend together all three samples based on the blend mask.
+			half noise = xDiff * blendWeights.x + yDiff * blendWeights.y + zDiff * blendWeights.z;
+			noise = noise * 2;			
 
+			// Terrain state
+			#define TERRAIN_MAX_HEIGHT 4
+			#define TERRAIN_SEA_LEVEL 0
+			half3 state = tex2D(_State, IN.uv_State);
+			half height = lerp(-1000, 4000, IN.worldPos.y / TERRAIN_MAX_HEIGHT); // meters
+			half temperature = lerp(-100, 100, state.r); // celsius
+			half humidity = lerp(0, 100, state.g);  // in percentage
+			
+			// BASE TERRAIN Rules
+			// k values represent the "presence" factor and defined by rules that return 
+			// values in range 0..1
+			// multiplication (*) represents logical AND
+			// addition (+) states for logical OR
+			// So expression like:
+			//		between(temperature, -40, 40) * moreThan(humidity, 40)
+			// Should be readed as:
+			//  if 
+			//		temperature between -40 and 40 degrees celcius
+			//	and
+			//		humidity more than 40%
+
+			// Snow layer
+			half k1 = clamp(between(temperature, -100, 0), 0, 1);
+			half3 v1 = tex2D(_Snow, IN.uv_MainTex).rgb;
+			
+			// Dirt layer
+			half k2 = clamp(between(temperature, -40, 40) * 
+							moreThan(humidity, 40), 0, 1);
+			half3 v2 = tex2D(_Dirt, IN.uv_MainTex).rgb;
+			
+			// Swamp layer
+			half k3 = between(temperature, 25, 100) * 
+					  moreThan(humidity, 60);
+			half3 v3 = tex2D(_Swamp, IN.uv_MainTex).rgb;
+			
+			// Grass layer
+			half k4 = between(temperature, 0, 30) * 
+				      moreThan(humidity, 20);
+			half3 v4 = tex2D(_Grass, IN.uv_MainTex).rgb;
+			
+			// Sand layer
+			half k5 = clamp(between(temperature, 40, 100) *
+							lessThan(humidity, 50) + 
+							lessThan(height, TERRAIN_SEA_LEVEL + 350, 50), 0, 1);
+			half3 v5 = tex2D(_Sand, IN.uv_MainTex).rgb;
+
+			/*
+			// SORT 
+			// Bubble sort to find best 2 matches
+			half kTmp;
+			half3 vTmp;
+		
+			#define SWAP(A, B, TMP) TMP=A; A=B; B=TMP;
+
+			// First max
+			if (k1 < k2) { SWAP(k1, k2, kTmp); SWAP(v1, v2, vTmp); }
+			if (k1 < k3) { SWAP(k1, k3, kTmp); SWAP(v1, v3, vTmp); }
+			if (k1 < k4) { SWAP(k1, k4, kTmp); SWAP(v1, v4, vTmp); }
+			if (k1 < k5) { SWAP(k1, k5, kTmp); SWAP(v1, v5, vTmp); }
+
+			// Second max			
+			if (k2 < k3) { SWAP(k2, k3, kTmp); SWAP(v2, v3, vTmp); }
+			if (k2 < k4) { SWAP(k2, k4, kTmp); SWAP(v2, v4, vTmp); }
+			if (k2 < k5) { SWAP(k2, k5, kTmp); SWAP(v2, v5, vTmp); }
+			*/
+			
+			half lerpFactor = 0.5 * k2 / (k1 + 0.01);
+			half noiseMask = 1 - 2 * abs(lerpFactor - 0.5);
+			//o.Albedo = lerp(v1, v2, saturate(lerpFactor + noiseMask * (noise - 0.5)));
+			//o.Albedo = lerp(v1, v2, lerpFactor);
+			//o.Albedo = noise;
+
+			// Base color
+			half3 color = tex2D(_MainTex, IN.uv_MainTex);			
+
+			// Converts the PRESENCE factor to alpha of the layer
+			#define ALPHA(x) saturate(2 * x * (1 + 0.6 * (noise * noise - 0.5)));
+			k1 = ALPHA(k1);
+			k2 = ALPHA(k2);
+			k3 = ALPHA(k3);
+			k4 = ALPHA(k4);
+			k5 = ALPHA(k5);			
+
+			// Alpha blending the layers
+			color = v1 * k1 + color * (1 - k1);
+			color = v2 * k2 + color * (1 - k2);
+			color = v3 * k3 + color * (1 - k3);
+			color = v4 * k4 + color * (1 - k4);
+			color = v5 * k5 + color * (1 - k5);
+			//color = v2 + color * (1 - saturate((k2 + k2 * noise)));
+			
+			o.Albedo = color;								
+			//o.Albedo = saturate(k1 * v1  + noise);
+			//o.Albedo = saturate(alpha);			
+
+			/*
 			half itotal = 1.0 / (snow + dirt + sand + grass + swamp + 0.01);
 
 			//o.Albedo = IN.vColor;
@@ -89,7 +224,7 @@
 			o.Albedo += itotal * swamp * tex2D(_Swamp, IN.uv_MainTex).rgb;
 			o.Albedo += itotal * dirt * tex2D(_Dirt, IN.uv_MainTex).rgb;
 			o.Albedo += itotal * sand * tex2D(_Sand, IN.uv_MainTex).rgb;
-			
+			*/
 		
 
 			uint i = _SelectedCell % 30;
@@ -100,7 +235,8 @@
 
 			// Grid			
 			fixed grid = tex2D(_Grid, IN.uv_Grid).r;
-			o.Albedo = (1 - grid) * o.Albedo + grid * _GridColor + isSelected * grid;
+			//o.Albedo = (1 - grid) * o.Albedo + grid * _GridColor + isSelected * grid;
+			o.Albedo = (1 - isSelected * 0.5) * o.Albedo + isSelected * grid;
 			o.Emission = grid * _GridColor;
 			
 			

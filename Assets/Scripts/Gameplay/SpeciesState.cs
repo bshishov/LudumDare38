@@ -245,7 +245,7 @@ namespace Assets.Scripts.Gameplay
 
             // MIGRATION
             // Соберем все соседние клетки в массив
-            var cellsForMigration = cell.EnumeratNeighbours().ToList();
+            var cellsForMigration = cell.EnumerateNeighbors().ToList();
 
             // Флаг, показывающий, мигрировали ли мы или нет
             var isMigrated = false;
