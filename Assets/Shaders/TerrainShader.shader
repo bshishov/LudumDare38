@@ -124,7 +124,7 @@
 			#define TERRAIN_MAX_HEIGHT 4
 			#define TERRAIN_SEA_LEVEL 0
 			half3 state = tex2D(_State, IN.uv_State);
-			half height = lerp(-1000, 4000, IN.worldPos.y / TERRAIN_MAX_HEIGHT); // meters
+			half height = lerp(-1000, 4000, (1 + IN.worldPos.y) / TERRAIN_MAX_HEIGHT); // meters
 			half temperature = lerp(-100, 100, state.r); // celsius
 			half humidity = lerp(0, 100, state.g);  // in percentage
 			
@@ -142,56 +142,36 @@
 			//		humidity more than 40%
 
 			// Snow layer
-			half k1 = clamp(between(temperature, -100, 0), 0, 1);
-			half3 v1 = tex2D(_Snow, IN.uv_MainTex).rgb;
+			half k1 = between(temperature, -100, 0);			
 			
 			// Dirt layer
-			half k2 = clamp(between(temperature, -40, 40) * 
-							moreThan(humidity, 40), 0, 1);
-			half3 v2 = tex2D(_Dirt, IN.uv_MainTex).rgb;
+			half k2 = between(temperature, -40, 40) * moreThan(humidity, 40);			
 			
 			// Swamp layer
-			half k3 = between(temperature, 25, 100) * 
-					  moreThan(humidity, 60);
-			half3 v3 = tex2D(_Swamp, IN.uv_MainTex).rgb;
+			half k3 = between(temperature, 25, 100) * moreThan(humidity, 60);			
 			
 			// Grass layer
-			half k4 = between(temperature, 0, 30) * 
-				      moreThan(humidity, 20);
-			half3 v4 = tex2D(_Grass, IN.uv_MainTex).rgb;
+			half k4 = between(temperature, 0, 30) * moreThan(humidity, 20);			
 			
 			// Sand layer
-			half k5 = clamp(between(temperature, 40, 100) *
-							lessThan(humidity, 50) + 
-							lessThan(height, TERRAIN_SEA_LEVEL + 350, 50), 0, 1);
+			half k5 = between(temperature, 40, 100) * lessThan(humidity, 50) + 
+					  lessThan(height, TERRAIN_SEA_LEVEL + 350, 50);
+
+			// Make sure everything is in bounds
+			k1 = saturate(k1);
+			k2 = saturate(k2);
+			k3 = saturate(k3);
+			k4 = saturate(k4);
+			k5 = saturate(k5);
+
+			// Textures
+			half3 v1 = tex2D(_Snow, IN.uv_MainTex).rgb;
+			half3 v2 = tex2D(_Dirt, IN.uv_MainTex).rgb;
+			half3 v3 = tex2D(_Swamp, IN.uv_MainTex).rgb;
+			half3 v4 = tex2D(_Grass, IN.uv_MainTex).rgb;
 			half3 v5 = tex2D(_Sand, IN.uv_MainTex).rgb;
 
-			/*
-			// SORT 
-			// Bubble sort to find best 2 matches
-			half kTmp;
-			half3 vTmp;
-		
-			#define SWAP(A, B, TMP) TMP=A; A=B; B=TMP;
-
-			// First max
-			if (k1 < k2) { SWAP(k1, k2, kTmp); SWAP(v1, v2, vTmp); }
-			if (k1 < k3) { SWAP(k1, k3, kTmp); SWAP(v1, v3, vTmp); }
-			if (k1 < k4) { SWAP(k1, k4, kTmp); SWAP(v1, v4, vTmp); }
-			if (k1 < k5) { SWAP(k1, k5, kTmp); SWAP(v1, v5, vTmp); }
-
-			// Second max			
-			if (k2 < k3) { SWAP(k2, k3, kTmp); SWAP(v2, v3, vTmp); }
-			if (k2 < k4) { SWAP(k2, k4, kTmp); SWAP(v2, v4, vTmp); }
-			if (k2 < k5) { SWAP(k2, k5, kTmp); SWAP(v2, v5, vTmp); }
-			*/
-			
-			half lerpFactor = 0.5 * k2 / (k1 + 0.01);
-			half noiseMask = 1 - 2 * abs(lerpFactor - 0.5);
-			//o.Albedo = lerp(v1, v2, saturate(lerpFactor + noiseMask * (noise - 0.5)));
-			//o.Albedo = lerp(v1, v2, lerpFactor);
-			//o.Albedo = noise;
-
+			// [!!!BLENDING!!!]
 			// Base color
 			half3 color = tex2D(_MainTex, IN.uv_MainTex);			
 
@@ -208,26 +188,12 @@
 			color = v2 * k2 + color * (1 - k2);
 			color = v3 * k3 + color * (1 - k3);
 			color = v4 * k4 + color * (1 - k4);
-			color = v5 * k5 + color * (1 - k5);
-			//color = v2 + color * (1 - saturate((k2 + k2 * noise)));
+			color = v5 * k5 + color * (1 - k5);			
 			
-			o.Albedo = color;								
-			//o.Albedo = saturate(k1 * v1  + noise);
-			//o.Albedo = saturate(alpha);			
+			o.Albedo = color;
 
-			/*
-			half itotal = 1.0 / (snow + dirt + sand + grass + swamp + 0.01);
-
-			//o.Albedo = IN.vColor;
-			o.Albedo += itotal * snow * tex2D(_Snow, IN.uv_MainTex).rgb;
-			o.Albedo += itotal * grass * tex2D(_Grass, IN.uv_MainTex).rgb;
-			o.Albedo += itotal * swamp * tex2D(_Swamp, IN.uv_MainTex).rgb;
-			o.Albedo += itotal * dirt * tex2D(_Dirt, IN.uv_MainTex).rgb;
-			o.Albedo += itotal * sand * tex2D(_Sand, IN.uv_MainTex).rgb;
-			*/
-		
-
-			uint i = _SelectedCell % 30;
+			// Selection
+			uint i = fmod(_SelectedCell, 30);
 			uint j = _SelectedCell / 30;
 			float isSelected = CLAMP_RANGE(IN.worldPos.x + 15.0, i, i + 1) * CLAMP_RANGE(IN.worldPos.z + 15.0, j, j + 1);
 			//o.Albedo *= 1 + isSelected * 2;
