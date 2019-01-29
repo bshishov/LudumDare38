@@ -5,6 +5,11 @@ namespace Assets.Scripts.Data
     [CreateAssetMenu(menuName = "Biology/World", fileName = "World")]
     public class World : ScriptableObject
     {
+        private const float MinTemperature = -148;
+        private const float MaxTemperature = 212;
+        private const float MinHumidity = 0;
+        private const float MaxHumidity = 100;
+
         [Header("General")] public string Name;
         public Sprite Icon;
 
@@ -37,20 +42,20 @@ namespace Assets.Scripts.Data
             return (step%StepsPerYear)/StepsPerYear;
         }
 
-        public float GetTemperature(float step, float lattitude, float height)
+        public float GetTemperature(float step, float latitude, float height)
         {
-            var val = TemperatureOverLattitude.Evaluate(lattitude);
-            val += TemperatureOverYear.Evaluate(GetSeason(step));
-            val += TemperatureOverHeight.Evaluate(height);
-            return Mathf.Clamp(val, -148, 212);
+            var val = Mathf.Clamp(TemperatureOverLattitude.Evaluate(latitude), MinTemperature, MaxTemperature);
+            val += Mathf.Clamp(TemperatureOverYear.Evaluate(GetSeason(step)), MinTemperature, MaxTemperature);
+            val += Mathf.Clamp(TemperatureOverHeight.Evaluate(height), MinTemperature, MaxTemperature);
+            return Mathf.Clamp(val, MinTemperature, MaxTemperature);
         }
 
-        public float GetHumidity(float step, float lattitude, float height)
+        public float GetHumidity(float step, float latitude, float height)
         {
-            var val = HumidityOverLattitude.Evaluate(lattitude);
-            val += HumidityOverYear.Evaluate(GetSeason(step));
-            val += HumidityOverHeight.Evaluate(height);
-            return Mathf.Clamp(val, 0f, 100f);
+            var val = Mathf.Clamp(HumidityOverLattitude.Evaluate(latitude), MinHumidity, MaxHumidity);
+            val += Mathf.Clamp(HumidityOverYear.Evaluate(GetSeason(step)), MinHumidity, MaxHumidity);
+            val += Mathf.Clamp(HumidityOverHeight.Evaluate(height), MinHumidity, MaxHumidity);
+            return Mathf.Clamp(val, MinHumidity, MaxHumidity);
         }
 
         public float GetHeight(float u, float v)
