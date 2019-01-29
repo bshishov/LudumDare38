@@ -134,6 +134,23 @@ namespace Assets.Scripts.Gameplay
             Tracker.Step();
             _temperatureSeries.AddPoint(GameManager.Instance.Step, Climate.Temperature);
             _humiditySeries.AddPoint(GameManager.Instance.Step, Climate.Humidity);
+
+            if (_isSelected)
+            {
+                Debugger.Instance.LogFormat("Process of ({0}, {1}), dt={2}", X, Y, dt);
+                Debugger.Instance.Display("ActiveCell/Height", Height);
+                Debugger.Instance.Display("ActiveCell/Temperature C", Climate.TemperatureAsCelsius());
+                Debugger.Instance.Display("ActiveCell/Temperature F", Climate.Temperature);
+                Debugger.Instance.Display("ActiveCell/Humidity", Climate.Humidity);
+                Debugger.Instance.Display("ActiveCell/X", X);
+                Debugger.Instance.Display("ActiveCell/Y", Y);
+
+                foreach (var speciesState in SpeciesStates)
+                {
+                    var key = string.Format("ActiveCell/Species/{0}", speciesState.Key.Name);
+                    Debugger.Instance.Display(key, speciesState.Value.GetVerboseCount());
+                }
+            }
         }
 
         public void OnSelect()

@@ -55,16 +55,22 @@ namespace Assets.Scripts.Gameplay
         private PropsAppearance[] _appearances;
         private Caster _caster;
         private AudioSource _audio;
+        private Debugger.Logger _logger;
+        private Debugger.Logger _speciesLogger;
 
         void Start ()
         {
+            // Logging
+            _logger = Debugger.Instance.GetLogger("Game/Log");
+            _speciesLogger = Debugger.Instance.GetLogger("Species/Log");
+
             _audio = GetComponent<AudioSource>();
             _terrain = GetComponent<TerrainGenerator>();
             BuildWorld();
 
             ShowMessage("Loading resources");
             _appearances = Resources.LoadAll<PropsAppearance>("Appearance");
-            Debug.LogFormat("Loaded {0} appearances", _appearances.Length);
+            _logger.LogFormat("Loaded {0} appearances", _appearances.Length);
 
             if (Tracker != null)
             {
@@ -134,11 +140,14 @@ namespace Assets.Scripts.Gameplay
                     _lastIndex = 0;
                 }
             }
+
+            Debugger.Instance.Display("Game/Step", _step);
+            Debugger.Instance.Display("Game/DT", _deltaTime);
         }
 
         void OnCellClick(Cell cell)
         {
-            Debug.LogFormat("Clicked on cell {0}. Height = {1}", cell.gameObject.name, cell.Height);
+            Debugger.Instance.LogFormat("Game/Log", "Clicked on cell {0}. Height = {1}", cell.gameObject.name, cell.Height);
 
             if (_selected != null)
                 _selected.OnUnSelect();
@@ -207,6 +216,7 @@ namespace Assets.Scripts.Gameplay
         {
             if (_lastEventCell != null)
                 ShowSpeciesPointer(PointerPlus, species, _lastEventCell.transform);
+            _speciesLogger.LogFormat("[step={0}] New species: {1}", _step, species.Name);
             ShowMessage(string.Format("New species evolved <color=yellow>{0}</color>", species.Name));
             PlayAudio(NewSpecies);
         }
@@ -304,6 +314,31 @@ namespace Assets.Scripts.Gameplay
         {
             if(clip.Clip != null)
                 _audio.PlayOneShot(clip.Clip, clip.VolumeModifier);
+        }
+
+        // Global population
+        private readonly Dictionary<Species, long> _globalPopulation = new Dictionary<Species, long>();
+        public void ModifyPopulation(Species species, long amount)
+        {
+            if (_globalPopulation.ContainsKey(species))
+            {
+                // Existing species
+                var population = _globalPopulation[species];
+                population += amount;
+                if (population <= 0)
+                {
+                    _speciesLogger.LogFormat("[step={0}] Extinction of {1}", _step, species.Name);
+                    population = 0;
+                }
+                _globalPopulation[species] = population;
+            }
+            else
+            {
+                _globalPopulation.Add(species, amount);
+                _speciesLogger.LogFormat("[step={0}] New species {1}, amount={2}", _step, species.Name, amount);
+            }
+
+            Debugger.Instance.Display(String.Format("Species/Global/{0}", species.Name), _globalPopulation[species]);
         }
     }
 }

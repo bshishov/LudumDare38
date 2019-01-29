@@ -1,4 +1,5 @@
 ﻿using Assets.Scripts.Data;
+using Assets.Scripts.Utils;
 using UnityEngine;
 
 namespace Assets.Scripts.Gameplay
@@ -181,6 +182,9 @@ namespace Assets.Scripts.Gameplay
 
         public void UpdateStateMap()
         {
+            Debugger.Instance.Display("Map/State", _stateTexture);
+            Debugger.Instance.Display("Map/Width", _stateTexture.width.ToString());
+            Debugger.Instance.Display("Map/Height", _stateTexture.height.ToString());
             _stateTexture.Apply();
             _meshFilter.mesh.colors32 = _stateMap;
         }
@@ -189,11 +193,5 @@ namespace Assets.Scripts.Gameplay
         {
             _renderer.material.SetInt("_SelectedCell", y * Width + x);
         }
-
-        /*
-        public void OnGUI()
-        {
-            GUI.DrawTexture(new Rect(0, 0, 512, 512), _stateTexture);
-        }*/
     }
 }

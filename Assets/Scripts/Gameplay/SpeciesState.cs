@@ -112,7 +112,12 @@ namespace Assets.Scripts.Gameplay
         {
             // TODO: double check the float to long conversion
             amount = amount > 0 ? Mathf.Floor(amount) : Mathf.Ceil(amount);
-            Population = (long) Mathf.Ceil(Population + amount * GameManager.Instance.TimeScale);
+            var amountL = (long)Mathf.Ceil(amount * GameManager.Instance.TimeScale);
+
+            // Notify the GameManager about population change
+            GameManager.Instance.ModifyPopulation(Species, amountL);
+
+            Population = Population + amountL;
         }
 
         /// <summary>
