@@ -44,17 +44,19 @@ namespace Assets.Scripts.Data
 
         public float GetTemperature(float step, float latitude, float height)
         {
-            var val = Mathf.Clamp(TemperatureOverLattitude.Evaluate(latitude), MinTemperature, MaxTemperature);
-            val += Mathf.Clamp(TemperatureOverYear.Evaluate(GetSeason(step)), MinTemperature, MaxTemperature);
-            val += Mathf.Clamp(TemperatureOverHeight.Evaluate(height), MinTemperature, MaxTemperature);
+            //  t = t_over_lat + t_over_year + t_over_height
+            var val = TemperatureOverLattitude.Evaluate(latitude);
+            val += TemperatureOverYear.Evaluate(GetSeason(step));
+            val += TemperatureOverHeight.Evaluate(height);
             return Mathf.Clamp(val, MinTemperature, MaxTemperature);
         }
 
         public float GetHumidity(float step, float latitude, float height)
         {
-            var val = Mathf.Clamp(HumidityOverLattitude.Evaluate(latitude), MinHumidity, MaxHumidity);
-            val += Mathf.Clamp(HumidityOverYear.Evaluate(GetSeason(step)), MinHumidity, MaxHumidity);
-            val += Mathf.Clamp(HumidityOverHeight.Evaluate(height), MinHumidity, MaxHumidity);
+            //  h = h_over_lat + h_over_year + h_over_height
+            var val = HumidityOverLattitude.Evaluate(latitude);
+            val += HumidityOverYear.Evaluate(GetSeason(step));
+            val += HumidityOverHeight.Evaluate(height);
             return Mathf.Clamp(val, MinHumidity, MaxHumidity);
         }
 
