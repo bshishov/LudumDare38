@@ -18,8 +18,8 @@ namespace Assets.Scripts.Gameplay
         public const int Width = 30;
         public const int Height = 30;
         public const int CellsCount = Width * Height;
-        public const float UpdateInterval = 0.1f;
-        public const int CellsPerUpdate = 60;
+        public const float UpdateInterval = 0.3f;
+        public const int CellsPerUpdate = 20;
 
         public World World;
         public Cell[,] Cells = new Cell[Width,Height];
