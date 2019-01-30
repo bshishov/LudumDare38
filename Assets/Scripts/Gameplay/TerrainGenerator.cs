@@ -29,7 +29,10 @@ namespace Assets.Scripts.Gameplay
 
         void Start()
         {
-            _stateTexture = new Texture2D(Width, Height, TextureFormat.RGFloat, false);
+            _stateTexture = new Texture2D(Width, Height, TextureFormat.RGFloat, false)
+            {
+                wrapMode = TextureWrapMode.Clamp
+            };
             _renderer = GetComponent<MeshRenderer>();
             _renderer.material.SetTexture("_State", _stateTexture);
         }

@@ -7,9 +7,10 @@ namespace Assets.Scripts.Utils
 {
     public class Debugger : LazySingleton<Debugger>
     {
-        const float Padding = 10f;
-        const float LineHeight = 20f;
-        const float HeaderColumn = 200f;
+        private const float Padding = 10f;
+        private const float LineHeight = 20f;
+        private const float HeaderColumn = 200f;
+        private const float Opacity = 0.9f;
 
         private static GUIStyle _boxStyle;
         private static GUIStyle _selectedBoxStyle;
@@ -39,7 +40,7 @@ namespace Assets.Scripts.Utils
                 {
                     normal =
                     {
-                        background = MakeTex(2, 2, new Color(0.1f, 0.1f, 0.1f, 0.8f))
+                        background = MakeTex(2, 2, new Color(0.1f, 0.1f, 0.1f, Opacity))
                     },
                     contentOffset = new Vector2(5f, 0f),
                     font = DefaultFont
@@ -60,7 +61,7 @@ namespace Assets.Scripts.Utils
                 {
                     normal =
                     {
-                        background = MakeTex(2, 2, new Color(0.4f, 0.0f, 0.0f, 0.8f))
+                        background = MakeTex(2, 2, new Color(0.4f, 0.0f, 0.0f, Opacity))
                     },
                     contentOffset = new Vector2(5f, 0f),
                     font = DefaultFont
@@ -81,7 +82,7 @@ namespace Assets.Scripts.Utils
                 {
                     normal =
                     {
-                        background = MakeTex(2, 2, new Color(0f, 0f, 0f, 0.8f))
+                        background = MakeTex(2, 2, new Color(0f, 0f, 0f, Opacity))
                     },
                     font = DefaultFont
                 };
@@ -191,6 +192,28 @@ namespace Assets.Scripts.Utils
             }
         }
 
+        public class CustomUiPayload : Payload
+        {
+            private readonly Action<Rect> _drawAction;
+
+            public CustomUiPayload(Vector2 size, Action<Rect> drawAction) : base(size)
+            {
+                _drawAction = drawAction;
+            }
+
+            public override void Draw(Rect rect)
+            {
+                if (_drawAction != null)
+                {
+                    _drawAction(rect);
+                }
+                else
+                {
+                    GUI.Label(rect, "Missing DRAW function!");
+                }
+            }
+        }
+
         public class DebugNode
         {
             public string Name;
@@ -290,10 +313,21 @@ namespace Assets.Scripts.Utils
             Payload = new StringPayload("F5 - Expand/Collapse, PageUp/PageDown - Navigation")
         };
         private Logger _defaultLog;
+        private readonly Dictionary<string, DebugNode> _pathCache = new Dictionary<string, DebugNode>();
 
         void Awake()
         {
             _defaultLog = GetLogger("Log");
+            Display("Debug/Clear Cache", new Vector2(200, 20), rect =>
+            {
+                GUILayout.BeginArea(rect);
+                if (GUILayout.Button("Clear cache"))
+                {
+                    Log("Debug/Log", "Clearing cache");
+                    _pathCache.Clear();
+                }
+                GUILayout.EndArea();
+            });
         }
         
         void Update()
@@ -349,8 +383,13 @@ namespace Assets.Scripts.Utils
 
         public DebugNode GetNode(string path)
         {
+            if (_pathCache.ContainsKey(path))
+                return _pathCache[path];
+            
             var parts = path.Split(PathSeparator);
-            return GetNode(parts);
+            var node = GetNode(parts);
+            _pathCache.Add(path, node);
+            return node;
         }
 
         public DebugNode GetNode(params string[] path)
@@ -423,6 +462,12 @@ namespace Assets.Scripts.Utils
             node.Touch();
         }
 
+        public void Display(DebugNode node, Vector2 size, Action<Rect> drawAction)
+        {
+            node.Payload = new CustomUiPayload(size, drawAction);
+            node.Touch();
+        }
+
         public void DisplayFullPath(string value, params string[] path)
         {
             Display(GetNode(path), value);
@@ -446,6 +491,11 @@ namespace Assets.Scripts.Utils
         public void Display(string path, Texture texture)
         {
             Display(GetNode(path), texture);
+        }
+
+        public void Display(string path, Vector2 size, Action<Rect> drawAction)
+        {
+            Display(GetNode(path), size, drawAction);
         }
 
         public Logger GetLogger(string path)

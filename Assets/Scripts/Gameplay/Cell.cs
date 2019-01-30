@@ -137,7 +137,6 @@ namespace Assets.Scripts.Gameplay
 
             if (_isSelected)
             {
-                Debugger.Instance.LogFormat("Process of ({0}, {1}), dt={2}", X, Y, dt);
                 Debugger.Instance.Display("ActiveCell/Height", Height);
                 Debugger.Instance.Display("ActiveCell/Temperature C", Climate.TemperatureAsCelsius());
                 Debugger.Instance.Display("ActiveCell/Temperature F", Climate.Temperature);

@@ -80,6 +80,40 @@ namespace Assets.Scripts.Gameplay
 
             _caster = GetComponent<Caster>();
             _caster.OnSpellCasted += CasterOnOnSpellCasted;
+
+
+            Debugger.Instance.Display("ActiveCell/Spawn", new Vector2(200, 80), CheatSpawnUI);
+
+        }
+
+        private string _cheatSpawnName;
+        private string _cheatSpawnAmount;
+
+        private void CheatSpawnUI(Rect rect)
+        {
+            GUILayout.BeginArea(rect);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Name");
+            _cheatSpawnName = GUILayout.TextField(_cheatSpawnName);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Amount");
+            _cheatSpawnAmount = GUILayout.TextField(_cheatSpawnAmount);
+            GUILayout.EndHorizontal();
+
+            if (GUILayout.Button("Spawn"))
+            {
+                long amount = 0;
+                if (long.TryParse(_cheatSpawnAmount, out amount))
+                {
+                    var specie = Resources.Load<Species>("Species/" + _cheatSpawnName);
+                    if(specie != null)
+                        GameManager.Instance.SpawnInSelectedCell(specie, amount);
+                }
+            }
+            GUILayout.EndArea();
         }
 
         private void CasterOnOnSpellCasted(Spell spell, Cell cell)
@@ -324,11 +358,14 @@ namespace Assets.Scripts.Gameplay
             {
                 // Existing species
                 var population = _globalPopulation[species];
-                population += amount;
-                if (population <= 0)
+                if (population + amount <= 0)
                 {
                     _speciesLogger.LogFormat("[step={0}] Extinction of {1}", _step, species.Name);
                     population = 0;
+                }
+                else
+                {
+                    population += amount;
                 }
                 _globalPopulation[species] = population;
             }
