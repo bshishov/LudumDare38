@@ -15,6 +15,11 @@ namespace Assets.Scripts.Gameplay
     [RequireComponent(typeof(Caster))]
     public class GameManager : Singleton<GameManager>
     {
+        public override bool IsPersistent
+        {
+            get { return false; }
+        }
+
         public const int Width = 30;
         public const int Height = 30;
         public const int CellsCount = Width * Height;
