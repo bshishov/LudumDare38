@@ -155,7 +155,8 @@
 			
 			// Sand layer
 			half k5 = between(temperature, 40, 100) * lessThan(humidity, 50) + 
-					  lessThan(height, TERRAIN_SEA_LEVEL + 350, 50);
+					  lessThan(height, TERRAIN_SEA_LEVEL + 350, 50) +
+					  moreThan(height, TERRAIN_SEA_LEVEL + 2200, 50) * between(temperature, 10, 100);
 
 			// Make sure everything is in bounds
 			k1 = saturate(k1);
