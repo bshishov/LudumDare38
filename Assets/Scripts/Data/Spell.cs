@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Assets.Scripts.Utils;
+﻿using Assets.Scripts.Utils;
 using UnityEngine;
 
 namespace Assets.Scripts.Data
@@ -15,17 +11,17 @@ namespace Assets.Scripts.Data
         public float Cooldown;
         public GameObject Effect;
         public Buff CellBuff;
-        public uint EffectWidth;
-        public uint EffectHeight;
+        public int EffectWidth;
+        public int EffectHeight;
         public float DelayBeforeBuff;
         public AudioClipWithVolume Sound;
 
-        public uint HalfWidth
+        public int HalfWidth
         {
             get { return EffectWidth/2; }
         }
 
-        public uint HalfHeight
+        public int HalfHeight
         {
             get { return EffectHeight / 2; }
         }

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts.Gameplay.Terrain;
+using UnityEngine;
 
 namespace Assets.Scripts.Gameplay
 {
@@ -9,24 +10,39 @@ namespace Assets.Scripts.Gameplay
         public float MaxZoom = 10f;
         public float MinZoom = -1f;
         public Vector3 Bounds = new Vector3(10, 0, 10);
-
-        public float MinTiltShift = 1f;
-        public float MaxTiltShift = 7f;
+        public TerrainManager Terrain;
 
         private bool _isPanning;
         private Vector3 _lastMousePos;
         private Vector3 _panTarget;
         private Quaternion _panRotation;
         private float _zoom = 0f;
+        private Vector3 _center;
 
+        void Awake()
+        {
+            if (Terrain != null)
+            {
+                Terrain.TerrainCreated += OnTerrainCreated;
+            }
+        }
 
         void Start ()
         {
             _panTarget = transform.position;
             _panRotation = transform.rotation;
         }
-	
-        // Update is called once per frame
+
+        private void OnTerrainCreated()
+        {
+            Debug.Log("Camera setup");
+            var tc = Terrain.Center;
+            _center = tc + new Vector3(0, 0, -5);
+            _panTarget = new Vector3(tc.x, transform.position.y, tc.y);
+            transform.position = _panTarget;
+            Bounds = new Vector3(Terrain.Size.x, 0, Terrain.Size.z) * 0.5f;
+        }
+
         void Update ()
         {
             // Pan by RMB
@@ -40,8 +56,8 @@ namespace Assets.Scripts.Gameplay
 
                 var delta = Input.mousePosition - _lastMousePos;
                 _panTarget -= new Vector3(delta.x / Screen.width, 0, delta.y / Screen.height) * PanSpeed / (10 + _zoom);
-                _panTarget.x = Mathf.Clamp(_panTarget.x, -Bounds.x, Bounds.x);
-                _panTarget.z = Mathf.Clamp(_panTarget.z, -Bounds.z, Bounds.z);
+                _panTarget.x = Mathf.Clamp(_panTarget.x, _center.x - Bounds.x, _center.x + Bounds.x);
+                _panTarget.z = Mathf.Clamp(_panTarget.z, _center.z - Bounds.z, _center.z + Bounds.z);
                 _lastMousePos = Input.mousePosition;
             }
             else

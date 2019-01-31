@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using Assets.Scripts.Data;
+using Assets.Scripts.Gameplay.Terrain;
 using Assets.Scripts.Utils;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.Gameplay
 {
@@ -15,21 +14,24 @@ namespace Assets.Scripts.Gameplay
     [RequireComponent(typeof(Caster))]
     public class GameManager : Singleton<GameManager>
     {
-        public override bool IsPersistent
+        // Not persistent singleton
+        public override bool IsPersistent { get { return false; } }
+
+        public int Width
         {
-            get { return false; }
+            get { return World.Width; }
         }
 
-        public const int Width = 30;
-        public const int Height = 30;
-        public const int CellsCount = Width * Height;
+        public int Height
+        {
+            get { return World.Height; }
+        }
+
         public const float UpdateInterval = 0.3f;
         public const int CellsPerUpdate = 20;
 
-        public World World;
-        public Cell[,] Cells = new Cell[Width,Height];
+        public World World { get; private set; }
         public GameObject CellPrefab;
-        public TerrainTypesCollection Terrains;
 
         [Range(0f, 10f)]
         public float TimeScale = 1f;
@@ -44,10 +46,13 @@ namespace Assets.Scripts.Gameplay
         public AudioClipWithVolume SpeciesExtinct;
         public AudioClipWithVolume Click;
 
+        [Header("Terrain")]
+        public TerrainManager Terrain;
 
         public float Step { get { return _step; } }
         public readonly SpeciesStatsTracker Tracker = new SpeciesStatsTracker { StepToForget = 20f };
 
+        private Cell[,] _cells;
         private Cell _selected;
         private float _step;
         private float _updateTime = 0f;
@@ -55,7 +60,6 @@ namespace Assets.Scripts.Gameplay
 
         private int _lastIndex = 0;
         private GameObject _messagesPanel;
-        private TerrainGenerator _terrain;
         private Cell _lastEventCell;
         private PropsAppearance[] _appearances;
         private Caster _caster;
@@ -69,8 +73,12 @@ namespace Assets.Scripts.Gameplay
             _logger = Debugger.Instance.GetLogger("Game/Log");
             _speciesLogger = Debugger.Instance.GetLogger("Species/Log");
 
+            // Load world from game settings
+            World = GameSettings.Instance.World;
+            _cells = new Cell[Width, Height];
+            _logger.LogFormat("Loading world {0}", World.Name);
+
             _audio = GetComponent<AudioSource>();
-            _terrain = GetComponent<TerrainGenerator>();
             BuildWorld();
 
             ShowMessage("Loading resources");
@@ -141,9 +149,15 @@ namespace Assets.Scripts.Gameplay
                     if (Physics.Raycast(ray, out hit))
                     {
                         PlayAudio(Click);
-                        var cell = hit.collider.gameObject.GetComponent<Cell>();
-                        if (cell != null)
-                            OnCellClick(cell);
+                        if (hit.collider is TerrainCollider)
+                        {
+                            Debug.DrawRay(hit.point, hit.normal * 3f, Color.red, 5f);
+                            //var coords = Terrain.CellCoordsFromUV(hit.textureCoord);
+                            var coords = Terrain.CellCoordsFromWorld(hit.point);
+                            var cell = _cells[coords.x, coords.y];
+                            if (cell != null)
+                                OnCellClick(cell);
+                        }
                     }
                 }
             }
@@ -154,11 +168,11 @@ namespace Assets.Scripts.Gameplay
             {
                 var i = 0;
                 for (i = _lastIndex; 
-                    (i < _lastIndex + CellsPerUpdate) && (i < CellsCount); i++)
+                    (i < _lastIndex + CellsPerUpdate) && (i < Width * Height); i++)
                 {
                     var x = i % Width;
                     var y = i / Width;
-                    var cell = Cells[x, y];
+                    var cell = _cells[x, y];
                     ClimateProcessing(cell);
                     cell.ProcessStep(_deltaTime);
                     UpdateAppearance(cell);
@@ -170,7 +184,7 @@ namespace Assets.Scripts.Gameplay
 
                 _lastIndex = i;
 
-                if (_lastIndex >= CellsCount - 1)
+                if (_lastIndex >= Width * Height - 1)
                 {
                     AfterAllCellsUpdated();
                     _step += 1f * TimeScale;
@@ -193,35 +207,36 @@ namespace Assets.Scripts.Gameplay
 
             cell.OnSelect();
             _selected = cell;
-            _terrain.SelectCell(cell.X, cell.Y);
+            Terrain.SelectCell(cell.X, cell.Y);
         }
 
         void BuildWorld()
         {
-            _terrain.Generate();
+            Terrain.CreateTerrain(World.TerrainSettings, Width, Height);
 
             for (var i = 0; i < Width; i++)
             {
                 for (var j = 0; j < Height; j++)
-                {
-                    var height = _terrain.GetHeightFromTile(i, j);
+                {                    
+                    var cellPos = Terrain.CellToWorldOnTerrain(i, j);
+                    var cellObjPost = new Vector3(cellPos.x, Mathf.Max(Terrain.SeaLevel, cellPos.y), cellPos.z);
 
-                    var obj = (GameObject) Instantiate(CellPrefab, new Vector3(i - Width * 0.5f + 0.5f, Mathf.Max(0, height) - 0.5f, j - Width * 0.5f + 0.5f), Quaternion.identity, transform);
+                    var obj = (GameObject) Instantiate(CellPrefab, cellObjPost, Quaternion.identity, transform);
                     obj.name = string.Format("Cell-{0}-{1}", i, j);
 
                     var cell = obj.GetComponent<Cell>();
                     cell.X = i;
                     cell.Y = j;
 
-                    cell.InitialSetup(height);
-                    Cells[i,j] = cell;
+                    cell.InitialSetup(cellPos.y);
+                    _cells[i,j] = cell;
                 }
             }
         }
 
         void UpdateAppearance(Cell cell)
         {
-            _terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
+            Terrain.SetStateToTile(cell.X, cell.Y, cell.Climate);
             cell.UpdateAppearance(GetAppearancesFor(cell));
         }
 
@@ -235,7 +250,7 @@ namespace Assets.Scripts.Gameplay
         void AfterAllCellsUpdated()
         {
             Tracker.Step();
-            _terrain.UpdateStateMap();
+            Terrain.UpdateStateMap();
         }
 
         public void ShowMessage(string text)
@@ -381,6 +396,22 @@ namespace Assets.Scripts.Gameplay
             }
 
             Debugger.Instance.Display(String.Format("Species/Global/{0}", species.Name), _globalPopulation[species]);
+        }
+
+        public Cell GetCellAt(int x, int y)
+        {
+            return _cells[x, y];
+        }
+
+        public Cell GetCellAt(Vector2Int pos)
+        {
+            return _cells[pos.x, pos.y];
+        }
+
+        public Cell GetCellAt(Vector3 worldPosition)
+        {
+            var coords = Terrain.CellCoordsFromWorld(worldPosition);
+            return _cells[coords.x, coords.y];
         }
     }
 }

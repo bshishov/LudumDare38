@@ -55,7 +55,7 @@ namespace Assets.Scripts.Gameplay
         public void InitialSetup(float height)
         {
             Height = height;
-            _terrain = GameManager.Instance.Terrains.GetForHeight(height);
+            _terrain = GameManager.Instance.World.TerrainTypes.GetForHeight(height);
             TerrainType = _terrain.TerrainType;
         }
 
@@ -221,25 +221,25 @@ namespace Assets.Scripts.Gameplay
         public IEnumerable<Cell> EnumerateNeighbors()
         {
             if(X > 1)
-                yield return GameManager.Instance.Cells[X - 1, Y];
+                yield return GameManager.Instance.GetCellAt(X - 1, Y);
 
-            if (X < GameManager.Width - 1)
-                yield return GameManager.Instance.Cells[X + 1, Y];
+            if (X < GameManager.Instance.Width - 1)
+                yield return GameManager.Instance.GetCellAt(X + 1, Y);
 
             if (Y > 1)
-                yield return GameManager.Instance.Cells[X, Y - 1];
+                yield return GameManager.Instance.GetCellAt(X, Y - 1);
 
-            if (Y < GameManager.Height - 1)
-                yield return GameManager.Instance.Cells[X, Y + 1];
+            if (Y < GameManager.Instance.Height - 1)
+                yield return GameManager.Instance.GetCellAt(X, Y + 1);
         }
 
         public Cell GetRandomNeighbor()
         {
             var x = Mathf.Round(UnityEngine.Random.Range(X - 1.8f, X + 1f));
             var y = Mathf.Round(UnityEngine.Random.Range(Y - 1.8f, Y + 1f));
-            x = Mathf.Clamp(x, 0, GameManager.Width - 1f);
-            y = Mathf.Clamp(y, 0, GameManager.Height - 1f);
-            return GameManager.Instance.Cells[(int)x, (int)y];
+            x = Mathf.Clamp(x, 0, GameManager.Instance.Width - 1f);
+            y = Mathf.Clamp(y, 0, GameManager.Instance.Height - 1f);
+            return GameManager.Instance.GetCellAt((int)x, (int)y);
         }
 
         public void AddSpecies(Species species, float amount, float averageAge = 0)
@@ -336,7 +336,6 @@ namespace Assets.Scripts.Gameplay
                 {
                     container = new GameObject(appearance.name).transform;
                     container.SetParent(transform, false);
-                    container.position += new Vector3(0, 0.5f, 0);
                 }
                 BuildAppearance(container, appearance);
                 ActiveAppearances.Add(appearance);

@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Assets.Scripts.Gameplay.Terrain;
+using UnityEngine;
 
 namespace Assets.Scripts.Data
 {
@@ -12,12 +13,21 @@ namespace Assets.Scripts.Data
 
         [Header("General")] public string Name;
         public Sprite Icon;
+        public int Width = 30;
+        public int Height = 30;
 
-        [Header("Terrain")] [Tooltip("Height must be from -1 to 3")] public AnimationCurve HeightCurve =
-            AnimationCurve.EaseInOut(0, -1, 1, 3);
+        [Header("Terrain")]
+        [Tooltip("Height must be from -1 to 3")]
+        public AnimationCurve HeightCurve = AnimationCurve.EaseInOut(0, -1, 1, 3);
 
         [SerializeField]
         public Generator Generator;
+
+        [SerializeField]
+        public TerrainSettings TerrainSettings;
+
+        [SerializeField]
+        public TerrainTypesCollection TerrainTypes;
 
         [Header("Climate")] [Range(100f, 10000f)] public float StepsPerYear = 3000f;
 

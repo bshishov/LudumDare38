@@ -1,7 +1,5 @@
 ﻿Shader "Custom/TerrainShader" {
 	Properties {
-		_GridColor ("Grid Color", Color) = (1,1,1,1)
-		
 		_Ramp("Lightning Ramp", 2D) = "white" {}
 		_Glossiness ("Smoothness", Range(0,1)) = 0.5
 		_Metallic ("Metallic", Range(0,1)) = 0.0
@@ -16,12 +14,15 @@
 		_Grass("Grass", 2D) = "white" {}
 		_Swamp("Swamp", 2D) = "white" {}
 
-		_Grid("Grid", 2D) = "white" {}
-		_SelectedCell("Metallic", int) = 0 
+		// Defined globally
+		//_Selection("Selection", Vector) = (0, 0, 0, 1)		
+		
+		_SelectionColor("Selection Color", Color) = (1,1,1,1)
+
 		_Scale("Scale", float) = 1
 
 		_NoiseMap("Noise", 2D) = "white" {}
-		_NoiseScale("Noise Scale",float) = 1
+		_NoiseScale("Noise Scale", float) = 1
 		_NoiseBlendSharpness("Noise Blend Sharpness",float) = 1
 		
 	}
@@ -44,8 +45,7 @@
 		sampler2D _Snow;
 		sampler2D _Grass;
 		sampler2D _Swamp;
-		sampler2D _Ramp;		
-		sampler2D _Grid;
+		sampler2D _Ramp;				
 		sampler2D _NoiseMap;
 		
 		float _NoiseScale;
@@ -71,12 +71,12 @@
 		};
 
 		half _Glossiness;
-		half _Metallic;
-		fixed4 _GridColor;
-		int _SelectedCell;
+		half _Metallic;		
+		half4 _Selection;
+		fixed4 _SelectionColor;
 				
 		#define RESCALE(X,A,B) (distance(X, A) / distance(B, A))
-		#define CLAMP_RANGE(X,A,B) clamp(sign((X) - (A)) * sign((B) - (X)), 0, 1)		
+		#define CLAMP_RANGE(X,A,B) saturate(sign((X) - (A)) * sign((B) - (X)))
 		#define IN_RANGE(X,A,B) CLAMP_RANGE(X, A, B) * (1 - abs(RESCALE(X, A, B) - 0.5) * 2.0)		
 
 		//static const half smoothFactor = 10;
@@ -157,24 +157,26 @@
 			half k5 = between(temperature, 40, 100) * lessThan(humidity, 50) + 
 					  lessThan(height, TERRAIN_SEA_LEVEL + 350, 50) +
 					  moreThan(height, TERRAIN_SEA_LEVEL + 2200, 50) * between(temperature, 10, 100);
-
+						
 			// Make sure everything is in bounds
 			k1 = saturate(k1);
 			k2 = saturate(k2);
 			k3 = saturate(k3);
 			k4 = saturate(k4);
-			k5 = saturate(k5);
+			k5 = saturate(k5);			
+			half k6 = saturate(blendWeights.r + blendWeights.b);
 
 			// Textures
 			half3 v1 = tex2D(_Snow, IN.uv_MainTex).rgb;
 			half3 v2 = tex2D(_Dirt, IN.uv_MainTex).rgb;
 			half3 v3 = tex2D(_Swamp, IN.uv_MainTex).rgb;
 			half3 v4 = tex2D(_Grass, IN.uv_MainTex).rgb;
-			half3 v5 = tex2D(_Sand, IN.uv_MainTex).rgb;
+			half3 v5 = tex2D(_Sand, IN.uv_MainTex).rgb;			
 
 			// [!!!BLENDING!!!]
 			// Base color
-			half3 color = tex2D(_MainTex, IN.uv_MainTex);			
+			half3 bedrock = tex2D(_MainTex, IN.uv_MainTex);
+			half3 color = bedrock;
 
 			// Converts the PRESENCE factor to alpha of the layer
 			#define ALPHA(x) saturate(2 * x * (1 + 0.6 * (noise * noise - 0.5)));
@@ -189,28 +191,23 @@
 			color = v2 * k2 + color * (1 - k2);
 			color = v3 * k3 + color * (1 - k3);
 			color = v4 * k4 + color * (1 - k4);
-			color = v5 * k5 + color * (1 - k5);			
+			color = v5 * k5 + color * (1 - k5);
+
+			color = bedrock * k6 + color * (1 - k6);
+
+
 			
 			o.Albedo = color;
 
-			// Selection
-			uint i = fmod(_SelectedCell, 30);
-			uint j = _SelectedCell / 30;
-			float isSelected = CLAMP_RANGE(IN.worldPos.x + 15.0, i, i + 1) * CLAMP_RANGE(IN.worldPos.z + 15.0, j, j + 1);
-			//o.Albedo *= 1 + isSelected * 2;
+			// Selection			
+			half selectionSize = _Selection.w * 0.5;			
+			half r = selectionSize * selectionSize * selectionSize * selectionSize;					
+			half selectionMask = saturate(1 - (pow(IN.worldPos.x - _Selection.x, 4)/r  + pow(IN.worldPos.z - _Selection.y, 4) / r));
+			half selectionOutline = saturate(selectionMask - sign(selectionMask - 0.5)) * selectionMask;
+			selectionMask = saturate(selectionOutline) * _SelectionColor.a;
 
-
-			// Grid			
-			fixed grid = tex2D(_Grid, IN.uv_Grid).r;
-			//o.Albedo = (1 - grid) * o.Albedo + grid * _GridColor + isSelected * grid;
-			o.Albedo = (1 - isSelected * 0.5) * o.Albedo + isSelected * grid;
-			o.Emission = grid * _GridColor;
-			
-			
-			// Metallic and smoothness come from slider variables
-			o.Metallic = _Metallic; 
-			o.Smoothness = _Glossiness;
-			//o.Alpha = c.a;
+			o.Albedo = selectionMask * _SelectionColor.rgb  + o.Albedo * (1 - selectionMask);
+			o.Emission = selectionMask * _SelectionColor.rgb;			
 		}
 		ENDCG
 	}

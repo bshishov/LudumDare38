@@ -1,59 +1,12 @@
-﻿using System;
-using System.Linq;
-using Assets.Scripts.Utils;
+﻿using Assets.Scripts.Utils;
 using com.heparo.terrain.toolkit;
 using UnityEngine;
 
 namespace Assets.Scripts.Gameplay.Terrain
 {
-    [Serializable]
-    public class TerrainSettings
+    public static class TerrainCreator
     {
-        public Material Material;
-        public TerrainData ExistingTerrain;
-
-        [Header("From HeightMap")]
-        public Vector3 TerrainSize = new Vector3(512f, 100f, 512f);
-        public int Resolution = 512;
-        public Texture2D HeightMap;
-
-        [Header("Padding")]
-        public float Padding = 20f;
-
-        [Header("Smooth edges")]
-        public bool SmoothEdges = true;
-        public AnimationCurve SmoothEdgeCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-        [Range(0f, 1f)]
-        public float Edge = 0.1f;
-
-        [Header("Post Processing")]
-        public bool ApplyHeightCurve = true;
-        public AnimationCurve HeightCurve = AnimationCurve.Linear(0, 0, 1, 1);
-
-        [Header("Sea")]
-        public bool GenerateSea = true;
-        public float SeaLevel = 1f;
-        public int SeaResolution = 512;
-        public Material SeaMaterial;
-    }
-
-    public class TerrainCreator : MonoBehaviour
-    {
-        public TerrainSettings Settings;
-        public bool GenerateOnStart = true;
-
-        void Start()
-        {
-            if (GenerateOnStart)
-                Generate(Settings);
-        }
-    
-        void Update()
-        {
-        }
-
-        [ContextMenu("Generate")]
-        public static void Generate(TerrainSettings settings)
+        public static void CreateTerrain(TerrainSettings settings, out GameObject terrainObj, out GameObject seaObj)
         {
             Debug.Log("Terrain creation started");
             var data = settings.ExistingTerrain;
@@ -81,14 +34,8 @@ namespace Assets.Scripts.Gameplay.Terrain
                         heights[i, j] = HeightMap.GetPixelBilinear(u, v).r;
                     }
                     */
-                
+
                 data.SetHeights(0, 0, heights);
-            }
-            
-            if (settings.SmoothEdges)
-            {
-                Debug.Log("Smoothing edges");
-                SmoothEdgesToGround(data, settings.SmoothEdgeCurve, settings.Edge);
             }
 
             if (settings.ApplyHeightCurve)
@@ -97,17 +44,33 @@ namespace Assets.Scripts.Gameplay.Terrain
                 ApplyHeightCurve(data, settings.HeightCurve);
             }
 
+            
 
-            var terrainObj = UnityEngine.Terrain.CreateTerrainGameObject(data);
+            // Terrain object
+            terrainObj = UnityEngine.Terrain.CreateTerrainGameObject(data);
             var terrain = terrainObj.GetComponent<UnityEngine.Terrain>();
             terrain.materialType = UnityEngine.Terrain.MaterialType.Custom;
             terrain.materialTemplate = settings.Material;
             terrain.terrainData.size = settings.TerrainSize;
 
-            //var toolkit = terrainObj.AddComponent<TerrainToolkit>();
-            //toolkit.FullHydraulicErosion(10, 0.5f, 0.5f, 0.5f, 0.5f);
+            if (settings.ApplyTilization)
+                Tilize(terrain.terrainData, settings.TilesX, settings.TilesY, settings.TilizationFactor);
 
-            
+            if (settings.ApplyThermalErosion)
+            {
+                var toolkit = terrainObj.AddComponent<TerrainToolkit>();
+                toolkit.FastThermalErosion(
+                    settings.ThermalErosionSettings.Iterations,
+                    settings.ThermalErosionSettings.MinSlope,
+                    settings.ThermalErosionSettings.Blend);
+            }
+
+            if (settings.SmoothEdges)
+            {
+                Debug.Log("Smoothing edges");
+                SmoothEdgesToGround(terrain.terrainData, settings.SmoothEdgeCurve, settings.Edge);
+            }
+
             var size = terrain.terrainData.size;
             Debug.LogFormat("Terrain heightmap size: {0}x{1}", terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight);
             Debug.LogFormat("Terrain actual size: x={0} y={1} z={2}", size.x, size.y, size.z);
@@ -122,12 +85,11 @@ namespace Assets.Scripts.Gameplay.Terrain
             var boundaryRenderer = boundaryObj.AddComponent<MeshRenderer>();
             boundaryRenderer.material = settings.Material;
 
-
             if (settings.GenerateSea)
             {
                 Debug.Log("Generating sea");
                 // Sea object
-                var seaObj = new GameObject("Sea") { isStatic = true };
+                seaObj = new GameObject("Sea") { isStatic = true };
                 var seaMeshFilter = seaObj.AddComponent<MeshFilter>();
                 seaMeshFilter.sharedMesh = Plane(Vector2.zero, Vector2.one, settings.SeaResolution, settings.SeaResolution, 0);
 
@@ -137,9 +99,13 @@ namespace Assets.Scripts.Gameplay.Terrain
                 seaObj.transform.position = new Vector3(-settings.Padding, settings.SeaLevel, -settings.Padding);
                 seaObj.transform.localScale = new Vector3(2 * settings.Padding + size.x, 1f, 2 * settings.Padding + size.z);
             }
+            else
+            {
+                seaObj = null;
+            }
         }
 
-        public static Mesh CreateBoundary(float padding, float terrainWidth, float terrainHeight, float y=0f)
+        public static Mesh CreateBoundary(float padding, float terrainWidth, float terrainHeight, float y = 0f)
         {
             var fullWidth = terrainWidth + 2 * padding;
             var fullHeight = terrainHeight + 2 * padding;
@@ -155,7 +121,7 @@ namespace Assets.Scripts.Gameplay.Terrain
                  <---> Terrain Width             
              */
 
-            
+
             var vertices = new Vector3[]
             {
                 // Outer,
@@ -230,8 +196,41 @@ namespace Assets.Scripts.Gameplay.Terrain
             {
                 var heights = data.GetHeights(chunk.Start.x, chunk.Start.y, chunk.Width, chunk.Height);
                 for (var i = 0; i < chunk.Height; i++)
-                    for (var j = 0; j < chunk.Width; j++)
-                        heights[i, j] = curve.Evaluate(heights[i, j]);
+                for (var j = 0; j < chunk.Width; j++)
+                    heights[i, j] = curve.Evaluate(heights[i, j]);
+
+                data.SetHeights(chunk.Start.x, chunk.Start.y, heights);
+            }
+        }
+
+        public static void Tilize(TerrainData data, int w, int h, float factor=0.5f)
+        {
+            var chunkSizeX = data.heightmapWidth / w;
+            var chunkSizeY = data.heightmapWidth / h;
+            var r4 = 0.5f * 0.5f * 0.5f * 0.5f;
+
+            foreach (var chunk in new ChunkIterator(data.heightmapWidth, data.heightmapHeight, chunkSizeX, chunkSizeY))
+            {
+                var heights = data.GetHeights(chunk.Start.x, chunk.Start.y, chunk.Width, chunk.Height);
+                var heightSum = 0f;
+                for (var i = 0; i < chunk.Height; i++)
+                for (var j = 0; j < chunk.Width; j++)
+                {
+                    heightSum += heights[i, j];
+                }
+
+                var avgHeight = heightSum / (chunk.Width * chunk.Height);
+
+                for (var i = 0; i < chunk.Height; i++)
+                for (var j = 0; j < chunk.Width; j++)
+                {
+                    var x = j / (chunk.Width - 1f) - 0.5f;
+                    var y = i / (chunk.Height - 1f) - 0.5f;
+
+                    var squircleMask = Mathf.Clamp01(1 - (x * x * x * x / r4 + y * y * y * y / r4));
+
+                    heights[i, j] = Mathf.Lerp(heights[i, j], avgHeight, Mathf.Clamp01(squircleMask * factor));
+                }
 
                 data.SetHeights(chunk.Start.x, chunk.Start.y, heights);
             }
@@ -243,7 +242,7 @@ namespace Assets.Scripts.Gameplay.Terrain
             var h = data.heightmapHeight;
             var wf = Mathf.CeilToInt(w * edge);
             var hf = Mathf.CeilToInt(h * edge);
-            
+
             // Corners
             SmoothEdgePart(data, curve, 0, h - hf, wf, hf, 0, 1, 0, 0);         // Top Left corner
             SmoothEdgePart(data, curve, w - wf, h - hf, wf, hf, 1, 0, 0, 0);    // Top right corner
@@ -267,7 +266,7 @@ namespace Assets.Scripts.Gameplay.Terrain
                     // Biliniear interpolation
                     var a = Mathf.Lerp(bottomLeft, bottomRight, (float)j / w);
                     var b = Mathf.Lerp(topLeft, topRight, (float)j / w);
-                    var f = Mathf.Lerp(a, b, (float)i / h); 
+                    var f = Mathf.Lerp(a, b, (float)i / h);
 
                     heights[i, j] = curve.Evaluate(f) * heights[i, j];
                 }
@@ -275,7 +274,7 @@ namespace Assets.Scripts.Gameplay.Terrain
             data.SetHeights(x1, y1, heights);
         }
 
-        public static Mesh Plane(Vector2 uvStart, Vector2 uvEnd, int heightSubdiv=1, int widthSubdiv=1, float height=0f)
+        public static Mesh Plane(Vector2 uvStart, Vector2 uvEnd, int heightSubdiv = 1, int widthSubdiv = 1, float height = 0f)
         {
             var w = widthSubdiv + 1;
             var h = heightSubdiv + 1;
@@ -317,7 +316,7 @@ namespace Assets.Scripts.Gameplay.Terrain
                     vi++;
                 }
             }
-            
+
             return new Mesh
             {
                 name = "Plane",

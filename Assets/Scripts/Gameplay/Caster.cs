@@ -105,19 +105,11 @@ namespace Assets.Scripts.Gameplay
         {
             if (_selectionActive)
             {
-                if (!UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(-1))
-                {
-                    RaycastHit hit;
-                    var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
 
-                    if (Physics.Raycast(ray, out hit))
-                    {
-                        var cell = hit.collider.gameObject.GetComponent<Cell>();
-                        if (cell != null)
-                        {
-                            HoverCell(cell);
-                        }
-                    }
+                var hoveredCell = RaycastFromCursor();
+                if (hoveredCell != null)
+                {
+                    HoverCell(hoveredCell);
 
                     if (Input.GetMouseButtonDown(0))
                     {
@@ -143,12 +135,12 @@ namespace Assets.Scripts.Gameplay
             var y = hovered.Y;
 
             x = (int)Math.Max(x, _currentSpell.HalfWidth);
-            x = (int)Math.Min(x, GameManager.Width - 1 - _currentSpell.HalfWidth);
+            x = (int)Math.Min(x, GameManager.Instance.Width - 1 - _currentSpell.HalfWidth);
 
             y = (int)Math.Max(y, _currentSpell.HalfHeight);
-            y = (int)Math.Min(y, GameManager.Height - 1 - _currentSpell.HalfHeight);
+            y = (int)Math.Min(y, GameManager.Instance.Height - 1 - _currentSpell.HalfHeight);
 
-            _lastHoveredCell = GameManager.Instance.Cells[x, y];
+            _lastHoveredCell = GameManager.Instance.GetCellAt(x, y);
 
             _currentSelector.transform.position = new Vector3(_lastHoveredCell.transform.position.x, _currentSelector.transform.position.y, _lastHoveredCell.transform.position.z);
             //_currentSelector.transform.position = cell.transform.position;
@@ -170,12 +162,37 @@ namespace Assets.Scripts.Gameplay
 
             if (Physics.Raycast(ray, out hit))
             {
-                var cell = hit.collider.gameObject.GetComponent<Cell>();
-                if (cell != null)
+                if (hit.collider is TerrainCollider)
                 {
-                    HoverCell(cell);
+                    Debug.DrawRay(hit.point, hit.normal, Color.blue, 5f);
+                    var cell = RaycastFromCursor();
+                    if (cell != null)
+                    {
+                        HoverCell(cell);
+                    }
                 }
             }
+        }
+
+        Cell RaycastFromCursor()
+        {
+            if (UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject(-1))
+                return null;
+
+
+            RaycastHit hit;
+            var ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                if (hit.collider is TerrainCollider)
+                {
+                    Debug.DrawRay(hit.point, hit.normal, Color.blue, 5f);
+                    return GameManager.Instance.GetCellAt(hit.point);
+                }
+            }
+
+            return null;
         }
 
         void DeactivateSelector()
@@ -216,7 +233,7 @@ namespace Assets.Scripts.Gameplay
             yield return new WaitForSeconds(delay);
 
             // Center cell first (for proper notifications
-            GameManager.Instance.Cells[centerX, centerY].ApplyBuff(spell.CellBuff);
+            GameManager.Instance.GetCellAt(centerX, centerY).ApplyBuff(spell.CellBuff);
 
             for (var i = 0; i < spell.EffectWidth; i++)
             {
@@ -229,7 +246,7 @@ namespace Assets.Scripts.Gameplay
                     if (centerX == x && centerY == y)
                         continue;
 
-                    var cell = GameManager.Instance.Cells[x, y];
+                    var cell = GameManager.Instance.GetCellAt(x, y);
                     cell.ApplyBuff(spell.CellBuff);
                 }
             }

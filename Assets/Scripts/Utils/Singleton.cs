@@ -44,7 +44,6 @@ namespace Assets.Scripts.Utils
 
         protected virtual void Awake()
         {
-            Debug.Log("Singleton AWAKE!");
             if(AssertSingleInstance && _instance != null && _instance != this)
                 DestroyImmediate(this);
         }

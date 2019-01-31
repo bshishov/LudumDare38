@@ -13,8 +13,8 @@ namespace Assets.Scripts.Gameplay
         public float MinHeight = -1f;
         public float MaxHeight = 2f;
 
-        public int Width { get { return GameManager.Width; } }
-        public int Height { get { return GameManager.Height; } }
+        public int Width { get { return GameManager.Instance.Width; } }
+        public int Height { get { return GameManager.Instance.Height; } }
 
         private float[] _tileHeightMap;
         private Color32[] _stateMap;
