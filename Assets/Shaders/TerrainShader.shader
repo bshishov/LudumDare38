@@ -124,7 +124,7 @@
 			#define TERRAIN_MAX_HEIGHT 4
 			#define TERRAIN_SEA_LEVEL 0
 			half3 state = tex2D(_State, IN.uv_State);
-			half height = lerp(-1000, 4000, (1 + IN.worldPos.y) / TERRAIN_MAX_HEIGHT); // meters
+			half height = lerp(-1000, 4000, (IN.worldPos.y) / TERRAIN_MAX_HEIGHT); // meters
 			half temperature = lerp(-100, 100, state.r); // celsius
 			half humidity = lerp(0, 100, state.g);  // in percentage
 			
