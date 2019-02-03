@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Collections;
+using UnityEngine;
 
 namespace Assets.Scripts.Utils
 {
@@ -17,28 +18,27 @@ namespace Assets.Scripts.Utils
         {
             _position = transform.position;
         }
-        
-        void Update()
-        {
-            if (_isShaking)
-            {
-                _currentShakeTime += Time.deltaTime;
-                var mod = 1f - _currentShakeTime / ShakeTime;
-                var s = Mathf.Sin(_currentShakeTime * 20f);
-                transform.position = _position + Amplitude * s * mod * mod * _modifier;
-
-                if (_currentShakeTime > ShakeTime)
-                {
-                    _isShaking = false;
-                }
-            }
-        }
 
         public void Shake(float modifier = 1f)
         {
             _isShaking = true;
             _currentShakeTime = 0f;
             _modifier = modifier;
+            StartCoroutine(ShakeRoutine());
+        }
+
+        public IEnumerator ShakeRoutine()
+        {
+            while (_currentShakeTime < ShakeTime)
+            {
+                _currentShakeTime += Time.deltaTime;
+                var mod = 1f - _currentShakeTime / ShakeTime;
+                var s = Mathf.Sin(_currentShakeTime * 20f);
+                transform.position = _position + Amplitude * s * mod * mod * _modifier;
+                yield return new WaitForEndOfFrame();
+            }
+
+            yield return null;
         }
     }
 }
